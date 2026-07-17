@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Comment.Infra</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.7">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" Version="10.0.7" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Mediator.Abstractions" Version="2.1.7" />
+    <PackageReference Include="Mediator.SourceGenerator" Version="2.1.7">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <!-- Pinned to non-vulnerable versions to override transitive dependencies (NU1902). -->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.8.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\CategoriesProvider\CategoriesProvider.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\Posts.Provider\Posts.Provider.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SqlKit\EfCoreFilters\EfCoreFilters.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\FeedProvider\FeedProvider.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\NotificationProvider\NotificationProvider.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\PaginationHelper\PaginationHelper.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\StarterEntities\StarterEntities.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\DomainEventing\DomainEventing.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\StorageProvider\StorageProvider.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\UserProvider\UserProvider.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\IdentityProvider\IdentityProvider.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\Cqrs\Cqrs.csproj" />
+    <ProjectReference Include="..\Comment.Application\Comment.Application.csproj" />
+    <ProjectReference Include="..\Comment.Domain\Comment.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

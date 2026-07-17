@@ -1,0 +1,18 @@
+{
+  "profiles": {
+    "Dev": {
+      "commandName": "Project",
+      "launchUrl": "api/healthcheck",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SQL_CONNECTION_STRING": "Data Source=127.0.0.1;port=3306;Database=Inspacy.Comment;uid=root;password=a608e2b2Q!",
+        "RMQ_CONNECTION": "{\"username\":\"arthur\",\"pw\":\"a608e2b2\",\"port\":5672,\"host\":\"127.0.0.1\",\"vhost\":\"inspacy\",\"exchange\":\"comment.events\",\"delayExchange\":\"inspacy.delayed\",\"retrycount\":6}",
+        "MINIO_CONNECTION": "{\"enabled\":true,\"endpoint\":\"127.0.0.1:9000\",\"accessKey\":\"minioadmin\",\"secretKey\":\"minioadmin\",\"bucket\":\"inspacy-storage\",\"useSSL\":false,\"publicUrl\":\"http://localhost:9000\"}",
+        "IDENTITY_SERVICE_URL": "http://localhost:5000/",
+        "IDENTITY_SERVICE_CLIENT_ID": "comment_api",
+        "IDENTITY_SERVICE_CLIENT_SECRET": "75139217L0-C9MS-21OW-K8B0-895417E6OPT21110"
+      },
+      "applicationUrl": "https://0.0.0.0:5015;http://0.0.0.0:5014"
+    }
+  }
+}

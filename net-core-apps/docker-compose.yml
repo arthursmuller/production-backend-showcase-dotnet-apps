@@ -1,0 +1,48 @@
+services:
+  mariadbData:
+    container_name: mariadbData
+    image: mariadb:10.6.11
+
+  rabbitmq:
+    container_name: rabbitMQ
+    image: heidiks/rabbitmq-delayed-message-exchange:3.11.28-management
+    hostname: rabbitmq
+
+  minio:
+    container_name: minio
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+
+  comment.api:
+    container_name: comment.API
+    image: ${DOCKER_REGISTRY-arthursmuller}/inspacy-comment-api:${PLATFORM:-linux}-${TAG:-latest}
+    restart: on-failure:30
+    build:
+      context: .
+      dockerfile: Services/Comment/Comment.Api/Dockerfile
+    depends_on:
+      - mariadbData
+      - rabbitmq
+      - minio
+
+  feed.api:
+    container_name: feed.API
+    image: ${DOCKER_REGISTRY-arthursmuller}/inspacy-feed-api:${PLATFORM:-linux}-${TAG:-latest}
+    restart: on-failure:30
+    build:
+      context: .
+      dockerfile: Services/Feed/Feed.Api/Dockerfile
+    depends_on:
+      - mariadbData
+      - rabbitmq
+
+  following.api:
+    container_name: following.API
+    image: ${DOCKER_REGISTRY-arthursmuller}/inspacy-following-api:${PLATFORM:-linux}-${TAG:-latest}
+    restart: on-failure:30
+    build:
+      context: .
+      dockerfile: Services/Following/Following.Api/Dockerfile
+    depends_on:
+      - mariadbData
+      - rabbitmq

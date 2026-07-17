@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Comment.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\Cqrs\Cqrs.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\PaginationHelper\PaginationHelper.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerCore\MessageBrokerCore.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\StarterEntities\StarterEntities.csproj" />
+    <ProjectReference Include="..\Comment.Domain\Comment.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

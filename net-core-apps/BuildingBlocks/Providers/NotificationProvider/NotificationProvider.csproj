@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Brokers\MessageBrokerCore\MessageBrokerCore.csproj" />
+		<ProjectReference Include="..\..\Brokers\MessageBrokerExtensions\MessageBrokerExtensions.csproj" />
+		<ProjectReference Include="..\..\Brokers\MessageBrokerRabbitMq\MessageBrokerRabbitMq.csproj" />
+		<ProjectReference Include="..\..\DomainKit\RichEnumeration\RichEnumeration.csproj" />
+	</ItemGroup>
+
+</Project>
+

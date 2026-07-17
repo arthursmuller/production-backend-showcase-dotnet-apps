@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="OpenIddict.Validation.SystemNetHttp" Version="7.5.0" />
+		<PackageReference Include="OpenIddict.Validation.AspNetCore" Version="7.5.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.0" />
+		<!-- Replaces Swashbuckle: ASP.NET Core 10 native OpenAPI generator + Scalar UI. -->
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
+		<!-- Pin the patched 2.x line instead of the vulnerable 2.0.0 transitive minimum. -->
+		<PackageReference Include="Microsoft.OpenApi" Version="2.10.0" />
+		<PackageReference Include="Scalar.AspNetCore" Version="2.14.11" />
+		<PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+		<PackageReference Include="Serilog.Sinks.MySQL" Version="5.0.0" />
+		<!-- Override vulnerable transitive MySql.Data 8.0.33 (System.Drawing.Common chain).
+		     MySql.Data 9.x targets net8.0+ and dropped the System.Security.Permissions /
+		     System.Windows.Extensions / System.Drawing.Common dependencies. -->
+		<PackageReference Include="MySql.Data" Version="9.7.0" />
+		<!-- Required by RabbitMqSseHub (multi-replica SSE fan-out). -->
+		<PackageReference Include="RabbitMQ.Client" Version="6.2.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Required by RabbitMqSseHub: shared topology constants + persistent connection abstraction. -->
+		<ProjectReference Include="..\..\Brokers\MessageBrokerCore\MessageBrokerCore.csproj" />
+		<ProjectReference Include="..\..\Brokers\MessageBrokerRabbitMq\MessageBrokerRabbitMq.csproj" />
+	</ItemGroup>
+
+</Project>

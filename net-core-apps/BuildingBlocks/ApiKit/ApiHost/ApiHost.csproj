@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>InspacyApiHost</RootNamespace>
+    <AssemblyName>InspacyApiHost</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Brokers\MessageBrokerExtensions\MessageBrokerExtensions.csproj" />
+    <ProjectReference Include="..\..\SqlKit\EfCoreMigrations\EfCoreMigrations.csproj" />
+    <ProjectReference Include="..\..\SqlKit\SqlMigrations\SqlMigrations.csproj" />
+	<ProjectReference Include="..\CommomStartupExtensions\CommomStartupExtensions.csproj" />
+	<ProjectReference Include="..\Cqrs\Cqrs.csproj" />
+	<ProjectReference Include="..\..\Providers\StorageProvider\StorageProvider.csproj" />
+  </ItemGroup>
+</Project>

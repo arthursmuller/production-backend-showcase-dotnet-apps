@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <UserSecretsId>107a795b-cddd-4d7f-aa14-dd2a6196af29</UserSecretsId>
+    <RootNamespace>Feed.API</RootNamespace>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerComposeProjectPath>..\..\..\docker-compose.dcproj</DockerComposeProjectPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.Logging" Version="8.16.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.MySQL" Version="5.0.0" />
+    <!-- Override vulnerable transitive MySql.Data 8.0.33 (System.Drawing.Common chain). -->
+    <PackageReference Include="MySql.Data" Version="9.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\ApiHost\ApiHost.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\CommomStartupExtensions\CommomStartupExtensions.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\Cqrs\Cqrs.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerCore\MessageBrokerCore.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerRabbitMq\MessageBrokerRabbitMq.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SqlKit\EfCoreFilters\EfCoreFilters.csproj" />
+    <ProjectReference Include="..\Feed.Application\Feed.Application.csproj" />
+    <ProjectReference Include="..\Feed.Infraestructure\Feed.Infraestructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
