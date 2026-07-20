@@ -1,9 +1,9 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
 namespace CategoriesProvider.Abstractions
 {
     public interface ICategoriesApi
     {
-        Task<int> GetIdByName(string name);
+        Task<int> GetIdByName(string name, System.Threading.CancellationToken cancellationToken);
     }
 }

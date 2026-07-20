@@ -1,185 +1,273 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Security;
+using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Oci.Common;
 using Oci.Common.Auth;
 using Oci.ObjectstorageService;
 using Oci.ObjectstorageService.Requests;
+using Oci.Common.Model;
+using Oci.ObjectstorageService.Models;
 
 namespace StorageProvider.Providers.Oci;
 
 /// <summary>
 /// OCI Object Storage backend – production. Activated when
-/// <c>OCI_CONNECTION</c> JSON env has <c>"enabled":"true"</c>.
+/// <c>Storage:OciConnection</c> has <c>"enabled":"true"</c>.
 /// </summary>
-public class OciObjectStorageProvider : IStorageProvider
+public sealed class OciObjectStorageProvider : IStorageProvider, IDisposable
 {
     private readonly OciObjectStorageOptions _opts;
     private readonly ObjectStorageClient _client;
     private readonly string _bucket;
     private readonly string _namespace;
+    private readonly SemaphoreSlim _bucketValidationLock = new(1, 1);
+    private bool _privateBucketValidated;
 
     public OciObjectStorageProvider(OciObjectStorageOptions opts)
     {
         _opts = opts;
-
-        var keyPath = _opts.PrivateKeyPath;
-        if (string.IsNullOrEmpty(keyPath) && !string.IsNullOrEmpty(_opts.PrivateKeyPem))
-        {
-            keyPath = Path.Combine(Path.GetTempPath(), $"oci-{Guid.NewGuid():N}.pem");
-            File.WriteAllText(keyPath, _opts.PrivateKeyPem);
-        }
-
-        if (string.IsNullOrEmpty(keyPath) || !File.Exists(keyPath))
-            throw new InvalidOperationException(
-                "OCI Object Storage provider requires privateKeyPath or privateKeyPem in OCI_CONNECTION.");
-
-        SecureString? passphrase = null;
-        if (!string.IsNullOrEmpty(_opts.PrivateKeyPassphrase))
-        {
-            passphrase = new SecureString();
-            foreach (var c in _opts.PrivateKeyPassphrase) passphrase.AppendChar(c);
-            passphrase.MakeReadOnly();
-        }
-
-        var auth = new SimpleAuthenticationDetailsProvider
-        {
-            TenantId           = _opts.TenancyOcid,
-            UserId             = _opts.UserOcid,
-            Fingerprint        = _opts.Fingerprint,
-            Region             = Region.FromRegionId(_opts.Region),
-            PrivateKeySupplier = new FilePrivateKeySupplier(keyPath, passphrase),
-        };
-
-        _client    = new ObjectStorageClient(auth);
-        _bucket    = _opts.BucketName;
+        var region = Region.FromRegionId(_opts.Region);
+        _client = new ObjectStorageClient(BuildAuthenticationProvider(_opts, region));
+        _bucket = _opts.BucketName;
         _namespace = _opts.Namespace;
     }
 
-    public async Task<DownloadDto?> Get(string endpoint)
-    {
-        var key = ResolveKey(endpoint);
-        if (string.IsNullOrEmpty(key)) return null;
-
-        try
-        {
-            var res = await _client.GetObject(new GetObjectRequest
-            {
-                NamespaceName = _namespace,
-                BucketName    = _bucket,
-                ObjectName    = key,
-            });
-
-            if (res?.InputStream == null) return null;
-
-            using var ms = new MemoryStream();
-            await res.InputStream.CopyToAsync(ms);
-
-            return new DownloadDto
-            {
-                Blob       = ms.ToArray(),
-                FileName   = Path.GetFileNameWithoutExtension(key),
-                Extension  = Path.GetExtension(key)?.TrimStart('.'),
-                MimeType   = res.ContentType,
-            };
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task<string> UploadStream(
+    public async Task<StorageObjectWriteResult> PutObject(
         string fileNamespace,
         string fileName,
         Stream file,
         int? userId,
         string? fileMimeType,
-        string? fileExtension)
+        string? fileExtension,
+        CancellationToken cancellationToken)
     {
-        var key = BuildKey(fileNamespace, userId, fileName, fileExtension);
-        await PutAsync(key, file ?? Stream.Null, fileMimeType);
-        return BuildPublicUrl(key);
+        var key = StorageObjectKey.Build(fileNamespace, userId, fileName, fileExtension);
+        await EnsurePrivateBucketAsync(cancellationToken);
+        var length = StorageObjectKey.GetValidatedLength(file, _opts.MaximumUploadBytes);
+        var mimeType = StorageObjectKey.ValidateMimeType(fileMimeType);
+        var version = await PutAsync(key, file, length, mimeType, cancellationToken);
+        return new(
+            _opts.UsesPrivateAccess ? key : BuildPublicUrl(key),
+            version);
     }
 
-    public async Task<bool> Delete(string endpoint)
+    public async Task<bool> ObjectExists(
+        string fileNamespace,
+        string fileName,
+        int? userId,
+        string? fileExtension,
+        CancellationToken cancellationToken)
     {
-        var key = ResolveKey(endpoint);
-        if (string.IsNullOrEmpty(key)) return false;
-
+        var key = StorageObjectKey.Build(fileNamespace, userId, fileName, fileExtension);
+        await EnsurePrivateBucketAsync(cancellationToken);
         try
         {
-            await _client.DeleteObject(new DeleteObjectRequest
+            await _client.HeadObject(new HeadObjectRequest
             {
                 NamespaceName = _namespace,
-                BucketName    = _bucket,
-                ObjectName    = key,
-            });
+                BucketName = _bucket,
+                ObjectName = key,
+            }, cancellationToken: cancellationToken);
             return true;
         }
-        catch
+        catch (OciException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
         {
             return false;
         }
     }
 
-    private async Task PutAsync(string key, Stream content, string? mime)
+    public async Task DownloadObject(
+        string fileNamespace,
+        string fileName,
+        int? userId,
+        string? fileExtension,
+        Stream destination,
+        CancellationToken cancellationToken)
     {
-        if (content.CanSeek) content.Position = 0;
-
-        await _client.PutObject(new PutObjectRequest
+        ArgumentNullException.ThrowIfNull(destination);
+        if (!destination.CanWrite)
+            throw new ArgumentException("The storage download destination must be writable.", nameof(destination));
+        var key = StorageObjectKey.Build(fileNamespace, userId, fileName, fileExtension);
+        await EnsurePrivateBucketAsync(cancellationToken);
+        var response = await _client.GetObject(new GetObjectRequest
         {
             NamespaceName = _namespace,
-            BucketName    = _bucket,
-            ObjectName    = key,
-            ContentType   = mime ?? "application/octet-stream",
-            PutObjectBody = content,
-        });
+            BucketName = _bucket,
+            ObjectName = key,
+        }, cancellationToken: cancellationToken);
+        await using (response.InputStream)
+            await response.InputStream.CopyToAsync(destination, cancellationToken);
+        if (destination.CanSeek)
+            destination.Position = 0;
     }
 
-    private static string BuildKey(string ns, int? userId, string fileName, string? extension)
+    public async Task<StorageObjectWriteResult> CopyObject(
+        string sourceNamespace,
+        string sourceFileName,
+        string destinationNamespace,
+        string destinationFileName,
+        int? userId,
+        string fileMimeType,
+        string? sourceExtension,
+        string? destinationExtension,
+        long contentLength,
+        CancellationToken cancellationToken)
     {
-        var baseName = Path.GetFileNameWithoutExtension(fileName ?? string.Empty);
-        var ext = !string.IsNullOrWhiteSpace(extension)
-            ? extension!.TrimStart('.')
-            : Path.GetExtension(fileName ?? string.Empty).TrimStart('.');
-
-        var name = string.IsNullOrWhiteSpace(ext) ? baseName : $"{baseName}.{ext}";
-        if (string.IsNullOrWhiteSpace(name)) name = Guid.NewGuid().ToString("N");
-
-        return string.Join("/", new[] { ns, userId?.ToString(), name }
-            .Where(s => !string.IsNullOrWhiteSpace(s))!);
+        await using var temporary = CreateTemporaryStream();
+        await DownloadObject(
+            sourceNamespace,
+            sourceFileName,
+            userId,
+            sourceExtension,
+            temporary,
+            cancellationToken);
+        if (temporary.Length != contentLength)
+            throw new InvalidDataException("The source object length changed before promotion.");
+        return await PutObject(
+            destinationNamespace,
+            destinationFileName,
+            temporary,
+            userId,
+            fileMimeType,
+            destinationExtension,
+            cancellationToken);
     }
 
-    private string? ResolveKey(string endpoint)
+    public async Task DeleteObject(
+        string fileNamespace,
+        string fileName,
+        int? userId,
+        string? fileExtension,
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(endpoint)) return null;
-
-        if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
+        var key = StorageObjectKey.Build(fileNamespace, userId, fileName, fileExtension);
+        await EnsurePrivateBucketAsync(cancellationToken);
+        try
         {
-            var marker = $"/b/{_bucket}/o/";
-            var idx    = uri.AbsolutePath.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-            if (idx >= 0)
-                return Uri.UnescapeDataString(uri.AbsolutePath.Substring(idx + marker.Length));
-
-            if (!string.IsNullOrEmpty(_opts.PublicBaseUrl) &&
-                endpoint.StartsWith(_opts.PublicBaseUrl, StringComparison.OrdinalIgnoreCase))
+            await _client.DeleteObject(new DeleteObjectRequest
             {
-                return Uri.UnescapeDataString(endpoint.Substring(_opts.PublicBaseUrl!.TrimEnd('/').Length).TrimStart('/'));
-            }
+                NamespaceName = _namespace,
+                BucketName = _bucket,
+                ObjectName = key,
+            }, cancellationToken: cancellationToken);
         }
+        catch (OciException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            // Exact-object cleanup is deliberately idempotent.
+        }
+    }
 
-        return endpoint;
+    private async Task<string> PutAsync(
+        string key,
+        Stream content,
+        long length,
+        string mime,
+        CancellationToken cancellationToken)
+    {
+        var response = await _client.PutObject(new PutObjectRequest
+        {
+            NamespaceName = _namespace,
+            BucketName = _bucket,
+            ObjectName = key,
+            ContentLength = length,
+            ContentType = mime,
+            PutObjectBody = content,
+        }, cancellationToken: cancellationToken);
+        return response.ETag ?? "not-reported";
     }
 
     private string BuildPublicUrl(string key)
     {
         var encoded = Uri.EscapeDataString(key).Replace("%2F", "/");
-        if (!string.IsNullOrEmpty(_opts.PublicBaseUrl))
-            return $"{_opts.PublicBaseUrl!.TrimEnd('/')}/{encoded}";
+        return $"{_opts.PublicBaseUrl!.TrimEnd('/')}/{encoded}";
+    }
 
-        return $"https://objectstorage.{_opts.Region}.oraclecloud.com/n/{_namespace}/b/{_bucket}/o/{encoded}";
+    private async Task EnsurePrivateBucketAsync(CancellationToken cancellationToken)
+    {
+        if (!_opts.UsesPrivateAccess || _privateBucketValidated)
+            return;
+
+        await _bucketValidationLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_privateBucketValidated)
+                return;
+
+            var response = await _client.GetBucket(new GetBucketRequest
+            {
+                NamespaceName = _namespace,
+                BucketName = _bucket,
+            }, cancellationToken: cancellationToken);
+            if (response.Bucket?.PublicAccessType !=
+                Bucket.PublicAccessTypeEnum.NoPublicAccess)
+            {
+                throw new InvalidOperationException(
+                    "The configured private OCI bucket permits public object access.");
+            }
+
+            _privateBucketValidated = true;
+        }
+        finally
+        {
+            _bucketValidationLock.Release();
+        }
+    }
+
+    private static FileStream CreateTemporaryStream() => new(
+        Path.Combine(Path.GetTempPath(), $"inspacy-storage-{Guid.NewGuid():N}.tmp"),
+        FileMode.CreateNew,
+        FileAccess.ReadWrite,
+        FileShare.None,
+        64 * 1024,
+        FileOptions.Asynchronous | FileOptions.SequentialScan | FileOptions.DeleteOnClose);
+
+    public void Dispose()
+    {
+        _bucketValidationLock.Dispose();
+        _client.Dispose();
+    }
+
+    private static IBasicAuthenticationDetailsProvider BuildAuthenticationProvider(
+        OciObjectStorageOptions options,
+        Region region)
+    {
+        if (options.AuthMode.Equals("ResourcePrincipal", StringComparison.OrdinalIgnoreCase))
+        {
+            var provider = ResourcePrincipalAuthenticationDetailsProvider.GetProvider();
+            provider.Region = region;
+            return provider;
+        }
+        if (options.AuthMode.Equals("InstancePrincipal", StringComparison.OrdinalIgnoreCase))
+        {
+            return new InstancePrincipalsAuthenticationDetailsProvider { Region = region };
+        }
+
+        if (string.IsNullOrWhiteSpace(options.PrivateKeyPath)
+            || !File.Exists(options.PrivateKeyPath))
+        {
+            throw new InvalidOperationException(
+                "OCI ApiKey authentication requires an existing mounted privateKeyPath.");
+        }
+
+        SecureString? passphrase = null;
+        if (!string.IsNullOrEmpty(options.PrivateKeyPassphrase))
+        {
+            passphrase = new SecureString();
+            foreach (var character in options.PrivateKeyPassphrase)
+                passphrase.AppendChar(character);
+            passphrase.MakeReadOnly();
+        }
+
+        return new SimpleAuthenticationDetailsProvider
+        {
+            TenantId = options.TenancyOcid,
+            UserId = options.UserOcid,
+            Fingerprint = options.Fingerprint,
+            Region = region,
+            PrivateKeySupplier = new FilePrivateKeySupplier(options.PrivateKeyPath, passphrase),
+        };
     }
 }

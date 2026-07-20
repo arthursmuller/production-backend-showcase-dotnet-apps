@@ -1,0 +1,69 @@
+service:
+  # The storage_oci_connection secret used by API and job roles must set
+  # "accessMode":"Private", omit publicBaseUrl, and name an OCI bucket whose
+  # PublicAccessType is NoPublicAccess. Startup/object access fails closed otherwise.
+  name: comment
+  image:
+    repository: registry.invalid/inspacy/comment-api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+roles:
+  api:
+    secretName: comment-api-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    env:
+      CommentAudienceProjection__EnableReadEnforcement: "true"
+      Storage__MediaSecurity__RequireMalwareScan: "true"
+      Storage__MediaSecurity__ClamAvHost: clamav.media-security.svc.cluster.local
+      Storage__MediaSecurity__ClamAvPort: "3310"
+      Storage__MediaSecurity__ConnectTimeoutSeconds: "2"
+      Storage__MediaSecurity__ScanTimeoutSeconds: "30"
+      Storage__MediaSecurity__ChunkBytes: "16384"
+      Storage__MediaSecurity__MaximumConcurrentScansPerReplica: "4"
+      Storage__MediaSecurity__CircuitBreakerFailureThreshold: "3"
+      Storage__MediaSecurity__CircuitBreakerOpenSeconds: "30"
+      Storage__MediaSecurity__ReadinessProbeTimeoutSeconds: "2"
+      STORAGE_CONTAINER_COMMENTS: comments
+      STORAGE_CONTAINER_COMMENT_QUARANTINE: comment-quarantine
+    autoscaling: { maxReplicas: 60 }
+  consumer:
+    secretName: comment-consumer-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    autoscaling: { maxReplicas: 30 }
+  job:
+    secretName: comment-job-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    env:
+      Following__ServiceUrl: http://following-api.following.svc.cluster.local:8080/
+      Storage__MediaSecurity__RequireMalwareScan: "true"
+      Storage__MediaSecurity__ClamAvHost: clamav.media-security.svc.cluster.local
+      Storage__MediaSecurity__ClamAvPort: "3310"
+      Storage__MediaSecurity__ConnectTimeoutSeconds: "2"
+      Storage__MediaSecurity__ScanTimeoutSeconds: "30"
+      Storage__MediaSecurity__ChunkBytes: "16384"
+      Storage__MediaSecurity__MaximumConcurrentScansPerReplica: "4"
+      Storage__MediaSecurity__CircuitBreakerFailureThreshold: "3"
+      Storage__MediaSecurity__CircuitBreakerOpenSeconds: "30"
+      Storage__MediaSecurity__ReadinessProbeTimeoutSeconds: "2"
+      STORAGE_CONTAINER_COMMENTS: comments
+      STORAGE_CONTAINER_COMMENT_QUARANTINE: comment-quarantine
+      CommentUserErasure__BatchSize: "50"
+      CommentUserErasure__MaximumRowsPerCycle: "400"
+      CommentUserErasure__MaximumBatchesPerCycle: "12"
+      CommentUserErasure__CycleTimeBudgetMilliseconds: "4000"
+      CommentUserErasure__LeaseSeconds: "30"
+migration:
+  secretName: comment-migration
+  certificateSecretKey: secret-provider-client.pfx
+
+networkPolicy:
+  apiClusterEgress:
+    - namespaceSelector: { kubernetes.io/metadata.name: media-security }
+      podSelector: { app.kubernetes.io/name: clamav }
+      ports: [{ protocol: TCP, port: 3310 }]
+  jobClusterEgress:
+    - namespaceSelector: { kubernetes.io/metadata.name: media-security }
+      podSelector: { app.kubernetes.io/name: clamav }
+      ports: [{ protocol: TCP, port: 3310 }]
+    - namespaceSelector: { kubernetes.io/metadata.name: following }
+      podSelector: { app.kubernetes.io/name: following }
+      ports: [{ protocol: TCP, port: 8080 }]

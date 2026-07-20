@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\..\Tests\PerformanceHelpers\*.cs" Link="Performance\%(Filename)%(Extension)" />
+    <Compile Include="..\Performance\FeedPerformanceScenario.cs" Link="Performance\FeedPerformanceScenario.cs" />
+    <Content Include="profiles.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\..\..\Tests\PerformanceHelpers\performance-result.schema.json"
+             Link="performance-result.schema.json"
+             CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\..\..\Tests\PerformanceHelpers\performance-profiles.schema.json"
+             Link="performance-profiles.schema.json"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,27 +1,26 @@
-using System.Text.Json.Serialization;
-
 namespace StorageProvider.Providers.Minio;
 
 public class MinioStorageOptions
 {
-    [JsonPropertyName("enabled")]
+    public const long DefaultMaximumUploadBytes = 32L * 1024 * 1024;
+
     public bool Enabled { get; set; }
 
-    [JsonPropertyName("endpoint")]
-    public string Endpoint { get; set; } = null!;
+    public string Endpoint { get; set; } = string.Empty;
 
-    [JsonPropertyName("accessKey")]
-    public string AccessKey { get; set; } = null!;
+    public string AccessKey { get; set; } = string.Empty;
 
-    [JsonPropertyName("secretKey")]
-    public string SecretKey { get; set; } = null!;
+    public string SecretKey { get; set; } = string.Empty;
 
-    [JsonPropertyName("bucket")]
-    public string BucketName { get; set; } = null!;
+    public string Bucket { get; set; } = string.Empty;
 
-    [JsonPropertyName("useSSL")]
     public bool UseSSL { get; set; }
 
-    [JsonPropertyName("publicUrl")]
-    public string? PublicBaseUrl { get; set; }
+    public string? PublicUrl { get; set; }
+
+    public bool CreateBucket { get; set; }
+
+    public bool AllowPublicRead { get; set; }
+
+    public long MaximumUploadBytes { get; set; } = DefaultMaximumUploadBytes;
 }

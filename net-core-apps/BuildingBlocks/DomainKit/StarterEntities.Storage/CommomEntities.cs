@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
 
 namespace StarterEntities.Storage
 {
@@ -15,65 +16,39 @@ namespace StarterEntities.Storage
         Video = 2,
 
         [Display(Name = "Audio")]
-        [Description("Audio")]
-        Audio = 3
+        [Description("Audio file")]
+        Audio = 3,
     }
 
-    public class MediaUploadResultDto
-    {
-        public string Url { get; set; }
-        public string FileName { get; set; }
-        public MediaType MediaType { get; set; }
-        public string ThumbnailUrl { get; set; }
-        public long? DurationSeconds { get; set; }
-        public string MimeType { get; set; }
-    }
+    /// <summary>
+    /// Describes an incoming media stream without coupling application code to ASP.NET form files.
+    /// </summary>
+    public sealed record IncomingMediaFile(
+        string FileName,
+        string MimeType,
+        long SizeBytes,
+        MediaType MediaType,
+        Func<Stream> OpenReadStream);
 
-    public class AddMediaItemDomainDto
-    {
-        public int Order { get; set; }
-        public string Url { get; set; }
-        public string FileName { get; set; }
-        public MediaType MediaType { get; set; }
-        public string ThumbnailUrl { get; set; }
-        public long? DurationSeconds { get; set; }
-        public string MimeType { get; set; }
-
-        public AddMediaItemDomainDto(
-            int order,
-            string url,
-            string fileName,
-            MediaType mediaType,
-            string thumbnailUrl,
-            long? durationSeconds,
-            string mimeType)
-        {
-            Order = order;
-            Url = url;
-            FileName = fileName;
-            MediaType = mediaType;
-            ThumbnailUrl = thumbnailUrl;
-            DurationSeconds = durationSeconds;
-            MimeType = mimeType;
-        }
-    }
-
-    public class UpdateMediaItemDomainDto
+    public sealed class UpdateMediaItemDomainDto
     {
         public int Id { get; set; }
         public int? Order { get; set; }
+
+        public UpdateMediaItemDomainDto() { }
+        public UpdateMediaItemDomainDto(int id, int? order) => (Id, Order) = (id, order);
     }
 
-    public class MediaItemDomainViewDto
+    public sealed class MediaItemDomainViewDto
     {
         public int Id { get; set; }
         public int Order { get; set; }
-        public string Url { get; set; }
-        public string FileName { get; set; }
+        public string Url { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
         public MediaType MediaType { get; set; }
-        public string ThumbnailUrl { get; set; }
+        public string? ThumbnailUrl { get; set; }
         public long? DurationSeconds { get; set; }
-        public string MimeType { get; set; }
+        public string MimeType { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; }
 
         public MediaItemDomainViewDto() { }
@@ -84,20 +59,11 @@ namespace StarterEntities.Storage
             string url,
             string fileName,
             MediaType mediaType,
-            string thumbnailUrl,
+            string? thumbnailUrl,
             long? durationSeconds,
             string mimeType,
-            DateTime createdDate)
-        {
-            Id = id;
-            Order = order;
-            Url = url;
-            FileName = fileName;
-            MediaType = mediaType;
-            ThumbnailUrl = thumbnailUrl;
-            DurationSeconds = durationSeconds;
-            MimeType = mimeType;
-            CreatedDate = createdDate;
-        }
+            DateTime createdDate) =>
+            (Id, Order, Url, FileName, MediaType, ThumbnailUrl, DurationSeconds, MimeType, CreatedDate) =
+            (id, order, url, fileName, mediaType, thumbnailUrl, durationSeconds, mimeType, createdDate);
     }
 }

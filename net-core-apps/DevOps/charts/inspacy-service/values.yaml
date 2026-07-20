@@ -1,0 +1,191 @@
+service:
+  # A chart install is deliberately inert until an environment overlay enables it.
+  enabled: false
+  name: service
+  image:
+    repository: ""
+    digest: ""
+    pullPolicy: IfNotPresent
+  imagePullSecrets: []
+  labels: {}
+  annotations: {}
+  podAnnotations: {}
+  serviceAnnotations: {}
+  port: 8080
+  priorityClassName: ""
+  # Keep false unless the selected workload-identity provider requires a projected
+  # service-account token. Configure a separate identity annotation for every role.
+  automountServiceAccountToken: false
+  commonEnv:
+    ASPNETCORE_ENVIRONMENT: Production
+    ASPNETCORE_HTTP_PORTS: "8080"
+    DOTNET_EnableDiagnostics: "0"
+
+roles:
+  api:
+    enabled: true
+    replicas: 3
+    secretName: ""
+    # Optional key in secretName containing the role's PKCS#12 mTLS client certificate.
+    # When set, the chart mounts it read-only at the path configured for SecretProvider.
+    certificateSecretKey: ""
+    serviceAccountAnnotations: {}
+    env: {}
+    resources:
+      requests: { cpu: 250m, memory: 384Mi }
+      limits: { cpu: "2", memory: 1Gi }
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 20
+      scaleUpStabilizationSeconds: 300
+      scaleDownStabilizationSeconds: 900
+      metrics:
+        - type: ContainerResource
+          containerResource:
+            name: cpu
+            container: app
+            target: { type: Utilization, averageUtilization: 60 }
+        - type: ContainerResource
+          containerResource:
+            name: memory
+            container: app
+            target: { type: Utilization, averageUtilization: 75 }
+    disruptionBudget:
+      enabled: true
+      minAvailable: 2
+  consumer:
+    enabled: true
+    replicas: 2
+    secretName: ""
+    certificateSecretKey: ""
+    serviceAccountAnnotations: {}
+    env:
+      Broker__RabbitMq__prefetchCount: "32"
+      Broker__RabbitMq__consumerConcurrency: "16"
+    resources:
+      requests: { cpu: 250m, memory: 384Mi }
+      limits: { cpu: "2", memory: 1Gi }
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 20
+      scaleUpStabilizationSeconds: 60
+      scaleDownStabilizationSeconds: 1800
+      metrics:
+        - type: ContainerResource
+          containerResource:
+            name: cpu
+            container: app
+            target: { type: Utilization, averageUtilization: 60 }
+    disruptionBudget:
+      enabled: true
+      minAvailable: 1
+  job:
+    enabled: true
+    replicas: 1
+    secretName: ""
+    certificateSecretKey: ""
+    serviceAccountAnnotations: {}
+    env: {}
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: "1", memory: 768Mi }
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      # A provider-specific external due-work/lease metric may enable native HPA
+      # or KEDA later, but the repository capacity envelope caps JobWorkers at 3.
+      maxReplicas: 3
+      scaleUpStabilizationSeconds: 60
+      scaleDownStabilizationSeconds: 300
+      metrics: []
+    disruptionBudget:
+      enabled: false
+      minAvailable: 0
+
+migration:
+  enabled: true
+  secretName: ""
+  certificateSecretKey: ""
+  serviceAccountAnnotations: {}
+  env: {}
+  activeDeadlineSeconds: 900
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  # Pre-install/pre-upgrade blocks the release if the one-shot migration fails.
+  helmHook: true
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 768Mi }
+
+probes:
+  startup:
+    path: /health/live
+    periodSeconds: 5
+    failureThreshold: 30
+    timeoutSeconds: 3
+  liveness:
+    path: /health/live
+    periodSeconds: 15
+    failureThreshold: 3
+    timeoutSeconds: 3
+  readiness:
+    path: /health/ready
+    periodSeconds: 5
+    failureThreshold: 3
+    timeoutSeconds: 3
+
+rollout:
+  minReadySeconds: 10
+  progressDeadlineSeconds: 600
+  terminationGracePeriodSeconds: 60
+  # Kubelet performs this Sleep lifecycle action before SIGTERM. It gives the
+  # endpoint controller/load balancer time to stop new work while preserving
+  # the rest of the grace period for ASP.NET/MassTransit host draining.
+  preStopDelaySeconds: 10
+  revisionHistoryLimit: 3
+  maxUnavailable: 0
+  maxSurge: 25%
+
+placement:
+  minimumZones: 3
+  topologyKeyZone: topology.kubernetes.io/zone
+  topologyKeyNode: kubernetes.io/hostname
+
+networkPolicy:
+  enabled: true
+  # Namespace selectors are deliberately empty by default. Environment overlays
+  # must identify the edge and monitoring namespaces; worker roles have no edge ingress.
+  edgeNamespaceSelector: {}
+  edgePodSelector: {}
+  monitoringNamespaceSelector: {}
+  monitoringPodSelector: {}
+  # Additional callers admitted to the API. Each entry must select both a
+  # namespace and a bounded set of pods, and must list exact destination ports.
+  apiIngress: []
+  dns:
+    namespaceSelector:
+      kubernetes.io/metadata.name: kube-system
+    podSelector:
+      k8s-app: kube-dns
+  # In-cluster destinations. Each entry supports namespaceSelector, podSelector,
+  # and a required bounded ports list.
+  clusterEgress: []
+  # API-only dependencies are additive to clusterEgress and cannot be reached by
+  # consumer, job, or migration identities.
+  apiClusterEgress: []
+  # Consumer-only dependencies are additive to clusterEgress.
+  consumerClusterEgress: []
+  # Job-only dependencies are additive to clusterEgress and cannot be reached by
+  # API, consumer, or migration identities.
+  jobClusterEgress: []
+  # Migration uses only these destinations plus DNS. It never inherits runtime
+  # broker/cache/object-storage access from clusterEgress/externalEgress.
+  migrationClusterEgress: []
+  # Managed/external destinations. Use exact provider CIDRs, never 0.0.0.0/0.
+  externalEgress: []
+  apiExternalEgress: []
+  consumerExternalEgress: []
+  jobExternalEgress: []
+  migrationExternalEgress: []

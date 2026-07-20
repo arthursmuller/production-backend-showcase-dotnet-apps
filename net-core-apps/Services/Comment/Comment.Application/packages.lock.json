@@ -1,0 +1,90 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "Mediator.Abstractions": {
+        "type": "Direct",
+        "requested": "[2.1.7, )",
+        "resolved": "2.1.7",
+        "contentHash": "93GWsxuikSVSGvWeNwkMecMXjUYURNyNj978FTnH7PhC3hrGh8mERNkxRNWIvLj7k0nnrnsQxixEQ0NxRXNkow=="
+      },
+      "Mediator.SourceGenerator": {
+        "type": "Direct",
+        "requested": "[2.1.7, )",
+        "resolved": "2.1.7",
+        "contentHash": "/rvBPx8LFyGKtkZZhoDlWxR7IDEEgdvjRQkvUEOrxT5QzN920gdggRIIImvAHbZIEGydzwcaphr0jUvap615fw=="
+      },
+      "Microsoft.EntityFrameworkCore.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "bOzrFCl6uZCjaSh2bG1ToRQRdx+iXvxosCg9hFyG9OWeAzOFI4xev9OqKeWfKf/kAHyox2JnbcvLVf2ceA7sqA=="
+      },
+      "Microsoft.EntityFrameworkCore.Analyzers": {
+        "type": "Transitive",
+        "resolved": "10.0.10",
+        "contentHash": "2gLDordUCGf3aNOOuqtTbP5mxhiP9nk6TnvGiE3RnqT891O+Zf/qKu1PIREubs1M16A0SImr4vULBfU5BTDs1Q=="
+      },
+      "comment.domain": {
+        "type": "Project",
+        "dependencies": {
+          "DomainEventing": "[1.0.0, )",
+          "DomainExceptions": "[1.0.0, )",
+          "RichEnumeration": "[1.0.0, )",
+          "StarterEntities": "[1.0.0, )",
+          "StarterEntities.Storage": "[1.0.0, )"
+        }
+      },
+      "cqrs": {
+        "type": "Project"
+      },
+      "domaineventing": {
+        "type": "Project",
+        "dependencies": {
+          "Mediator.Abstractions": "[2.1.7, )",
+          "Microsoft.EntityFrameworkCore": "[10.0.10, )",
+          "StarterEntities": "[1.0.0, )"
+        }
+      },
+      "domainexceptions": {
+        "type": "Project"
+      },
+      "identityprovider": {
+        "type": "Project"
+      },
+      "messagebrokercontracts": {
+        "type": "Project"
+      },
+      "observability": {
+        "type": "Project"
+      },
+      "privacyoperations": {
+        "type": "Project"
+      },
+      "richenumeration": {
+        "type": "Project"
+      },
+      "runtimeidentity": {
+        "type": "Project"
+      },
+      "securityprimitives": {
+        "type": "Project"
+      },
+      "starterentities": {
+        "type": "Project"
+      },
+      "starterentities.storage": {
+        "type": "Project"
+      },
+      "Microsoft.EntityFrameworkCore": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.10, )",
+        "resolved": "10.0.10",
+        "contentHash": "a0V7zj/VbYP6dTdWpUgE/r2PuLKtUGe2aJ0lVKkn/wP9ZhaxUz2kQydVfvOjCv2SKxlrqdBfHhPD4Cvlf+4ffA==",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore.Abstractions": "10.0.10",
+          "Microsoft.EntityFrameworkCore.Analyzers": "10.0.10"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,215 @@
+name: Backend promotion verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful main-branch backend-ci run ID
+        required: true
+        type: string
+      source_commit:
+        description: Full 40-character commit SHA produced by that run
+        required: true
+        type: string
+      service:
+        description: OCI artifact to verify
+        required: true
+        type: choice
+        options:
+          - comment-api
+          - feed-api
+          - following-api
+          - interaction-api
+          - moderation-api
+          - rabbitmq-delayed
+      expected_archive_digest:
+        description: Approved OCI archive digest in sha256:HEX form
+        required: true
+        type: string
+      expected_image_digest:
+        description: Approved OCI image/index digest in sha256:HEX form
+        required: true
+        type: string
+      previous_image_digest:
+        description: Known-good rollback image digest in sha256:HEX form
+        required: true
+        type: string
+      edge_policy_digest:
+        description: Digest of the reviewed provider gateway/WAF export
+        required: true
+        type: string
+      edge_evidence_reference:
+        description: Non-secret restricted evidence/change-record reference
+        required: true
+        type: string
+      change_record:
+        description: Approved release/change-record identifier
+        required: true
+        type: string
+      target_environment:
+        description: Verification target; this workflow does not deploy
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  actions: read
+  attestations: read
+  contents: read
+
+concurrency:
+  group: backend-promotion-${{ inputs.target_environment }}-${{ inputs.service }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify signed promotion subject
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: ${{ inputs.target_environment }}
+    steps:
+      - name: Check out the protected promotion policy
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Validate request and source workflow run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          EXPECTED_ARCHIVE_DIGEST: ${{ inputs.expected_archive_digest }}
+          EXPECTED_IMAGE_DIGEST: ${{ inputs.expected_image_digest }}
+          PREVIOUS_IMAGE_DIGEST: ${{ inputs.previous_image_digest }}
+          EDGE_POLICY_DIGEST: ${{ inputs.edge_policy_digest }}
+          EDGE_EVIDENCE_REFERENCE: ${{ inputs.edge_evidence_reference }}
+          CHANGE_RECORD: ${{ inputs.change_record }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_ARCHIVE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$EXPECTED_IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$PREVIOUS_IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$EDGE_POLICY_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$EXPECTED_IMAGE_DIGEST" != "$PREVIOUS_IMAGE_DIGEST" ]]
+          [[ "$EDGE_EVIDENCE_REFERENCE" =~ ^[A-Za-z0-9][A-Za-z0-9._:/#-]{2,255}$ ]]
+          [[ "$CHANGE_RECORD" =~ ^[A-Za-z0-9][A-Za-z0-9._:/#-]{2,127}$ ]]
+
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID")"
+          jq -e \
+            --arg sourceCommit "$SOURCE_COMMIT" '
+              .head_sha == $sourceCommit and
+              .head_branch == "main" and
+              .event == "push" and
+              .conclusion == "success" and
+              .path == ".github/workflows/backend-ci.yml"
+            ' <<< "$run_json" >/dev/null
+
+      - name: Download the exact CI artifact bundle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          SERVICE: ${{ inputs.service }}
+        run: |
+          set -euo pipefail
+          artifact_name="${SERVICE}-${SOURCE_COMMIT}"
+          mkdir -p promotion-bundle
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$artifact_name" \
+            --dir promotion-bundle
+
+      - name: Verify checksum, OCI digest, provenance signature, and signed SBOM
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+          SERVICE: ${{ inputs.service }}
+          EXPECTED_ARCHIVE_DIGEST: ${{ inputs.expected_archive_digest }}
+          EXPECTED_IMAGE_DIGEST: ${{ inputs.expected_image_digest }}
+        run: |
+          set -euo pipefail
+          bash net-core-apps/DevOps/security/verify-promotion-bundle.sh \
+            --bundle-dir promotion-bundle \
+            --evidence-dir promotion-evidence \
+            --service "$SERVICE" \
+            --source-commit "$SOURCE_COMMIT" \
+            --source-run-id "$SOURCE_RUN_ID" \
+            --repository "$GITHUB_REPOSITORY" \
+            --expected-archive-digest "$EXPECTED_ARCHIVE_DIGEST" \
+            --expected-image-digest "$EXPECTED_IMAGE_DIGEST"
+
+      - name: Bind policy and external evidence identifiers
+        shell: bash
+        env:
+          TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+          PREVIOUS_IMAGE_DIGEST: ${{ inputs.previous_image_digest }}
+          EDGE_POLICY_DIGEST: ${{ inputs.edge_policy_digest }}
+          EDGE_EVIDENCE_REFERENCE: ${{ inputs.edge_evidence_reference }}
+          CHANGE_RECORD: ${{ inputs.change_record }}
+        run: |
+          set -euo pipefail
+          canary_policy="net-core-apps/DevOps/security/canary-rollout-policy.json"
+          edge_contract="net-core-apps/DevOps/security/edge-controls.example.json"
+          canary_policy_digest="sha256:$(sha256sum "$canary_policy" | awk '{print $1}')"
+          edge_contract_digest="sha256:$(sha256sum "$edge_contract" | awk '{print $1}')"
+
+          jq \
+            --arg targetEnvironment "$TARGET_ENVIRONMENT" \
+            --arg previousImageDigest "$PREVIOUS_IMAGE_DIGEST" \
+            --arg edgePolicyDigest "$EDGE_POLICY_DIGEST" \
+            --arg edgeEvidenceReference "$EDGE_EVIDENCE_REFERENCE" \
+            --arg changeRecord "$CHANGE_RECORD" \
+            --arg canaryPolicyDigest "$canary_policy_digest" \
+            --arg edgeContractDigest "$edge_contract_digest" \
+            --arg verificationRunId "$GITHUB_RUN_ID" \
+            --arg verificationActor "$GITHUB_ACTOR" '
+              . + {
+                targetEnvironment: $targetEnvironment,
+                previousImageDigest: $previousImageDigest,
+                edgePolicyDigest: $edgePolicyDigest,
+                edgeEvidenceReference: $edgeEvidenceReference,
+                changeRecord: $changeRecord,
+                canaryPolicyDigest: $canaryPolicyDigest,
+                edgeContractDigest: $edgeContractDigest,
+                verificationRunId: $verificationRunId,
+                verificationActor: $verificationActor,
+                environmentProtectionRequiredByPolicy: true,
+                environmentReviewerEvidence: "GitHub environment deployment record; configuration and reviewers are external to this repository",
+                automaticRollbackBindingVerified: false,
+                deploymentExecuted: false
+              }
+            ' promotion-evidence/repository-verification.json > promotion-evidence/promotion-gate.json
+
+          cp "$canary_policy" promotion-evidence/
+          cp "$edge_contract" promotion-evidence/
+
+      - name: Upload promotion verification evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ inputs.service }}-${{ inputs.source_commit }}-${{ inputs.target_environment }}-promotion-gate
+          path: promotion-evidence
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record verification boundary
+        shell: bash
+        run: |
+          {
+            echo "## Promotion verification passed"
+            echo
+            echo "The requested archive, OCI digest, signed provenance, and signed SPDX SBOM were verified."
+            echo "The canary and edge policy identifiers were bound to the evidence artifact."
+            echo
+            echo "This workflow did not deploy, exercise canary traffic, prove automatic rollback wiring, or manufacture an approval."
+          } >> "$GITHUB_STEP_SUMMARY"

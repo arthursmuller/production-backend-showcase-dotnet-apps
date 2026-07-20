@@ -1,0 +1,109 @@
+{
+  "formatVersion": 1,
+  "regenerationCommand": "pwsh -File Tests/Architecture.Tests/Baselines/regenerate-query-plan-baseline.ps1",
+  "scope": "five-service-real-mariadb-explain-source-contract",
+  "fleetQueryShapeSha256": "14b74b7eadc2c26d172fbdbc1c91d5942217f23dd37f7cbf4cd3ffa85e3e6f36",
+  "queries": [
+    {
+      "queryId": "comment.target-comments.cursor-page",
+      "proofId": "comment.real-mariadb.cursor-explain",
+      "service": "Comment",
+      "sourceTestPath": "Services/Comment/Comment.Tests/Comment.IntegrationTests/CommentCursorMariaDbIntegrationTests.cs",
+      "testFullyQualifiedName": "Comment.UnitTests.CommentCursorMariaDbIntegrationTests.Keyset_pages_are_stable_without_count_or_offset_under_concurrent_insert",
+      "expectedIndex": "IX_CommentPost_Target_Visibility_Created_Id",
+      "bounded": {
+        "limitRows": 51,
+        "limitKind": "constant-page-size-plus-one"
+      },
+      "keyset": {
+        "order": [
+          "createdDate:desc",
+          "id:desc"
+        ],
+        "predicateKind": "strict-after-tuple"
+      },
+      "normalizedSqlShapeSha256": "3407f35096f0082b758d96a52a463777410db72d738a22c8b99d35e549d6f68e"
+    },
+    {
+      "queryId": "feed.hybrid-pull.activity-page",
+      "proofId": "feed.real-mariadb.pull-cursor-explain",
+      "service": "Feed",
+      "sourceTestPath": "Tests/MariaDb.IntegrationTests/FeedDeliveryIntegrationTests.cs",
+      "testFullyQualifiedName": "MariaDb.IntegrationTests.FeedDeliveryIntegrationTests.Hybrid_reader_caps_pull_publishers_at_64_and_paginates_a_stable_deduplicated_tuple",
+      "expectedIndex": "IX_FeedActivity_Pull_Cursor",
+      "bounded": {
+        "limitRows": 50,
+        "limitKind": "constant-page-size"
+      },
+      "keyset": {
+        "order": [
+          "rankKey:desc",
+          "publishedAtUtc:desc",
+          "id:desc"
+        ],
+        "predicateKind": "ordered-first-page"
+      },
+      "normalizedSqlShapeSha256": "4cacd97971b69ce8a832bbbcfcaa57049551b09e98529d5b23442930358ce7ba"
+    },
+    {
+      "queryId": "following.follower-edges.cursor-page",
+      "proofId": "following.real-mariadb.cursor-explain",
+      "service": "Following",
+      "sourceTestPath": "Services/Following/Following.Tests/Following.IntegrationTests/FollowingCursorMariaDbIntegrationTests.cs",
+      "testFullyQualifiedName": "Following.UnitTests.FollowingCursorMariaDbIntegrationTests.Real_keyset_query_is_stable_under_a_newer_concurrent_insert",
+      "expectedIndex": "IX_Follow_Follower_Cursor",
+      "bounded": {
+        "limitRows": 51,
+        "limitKind": "constant-page-size-plus-one"
+      },
+      "keyset": {
+        "order": [
+          "createdDate:desc",
+          "id:desc"
+        ],
+        "predicateKind": "strict-after-tuple"
+      },
+      "normalizedSqlShapeSha256": "75a5c1563659b4a082f2592302e3962a6ec894715679d40d13503a35f4b1d74b"
+    },
+    {
+      "queryId": "interaction.authoritative-state.snapshot-revision",
+      "proofId": "interaction.real-mariadb.authority-revision-explain",
+      "service": "Interaction",
+      "sourceTestPath": "Services/Interaction/Interaction.Tests/Interaction.IntegrationTests/InteractionAuthoritativeExportMariaDbTests.cs",
+      "testFullyQualifiedName": "Interaction.UnitTests.InteractionAuthoritativeExportMariaDbTests.Export_page_query_plan_uses_bounded_coordinate_and_latest_revision_indexes",
+      "expectedIndex": "IX_InteractionAuthorityRevision_Resource_Cursor",
+      "bounded": {
+        "limitRows": 501,
+        "limitKind": "parameterized-maximum-page-size-plus-one"
+      },
+      "keyset": {
+        "order": [
+          "revisionCursor:desc",
+          "cursor:asc"
+        ],
+        "predicateKind": "bounded-snapshot-range"
+      },
+      "normalizedSqlShapeSha256": "adf9fad45a17332a05a3df6cc28e9336127880f83f1a0f19d5f1b8d129f36b47"
+    },
+    {
+      "queryId": "moderation.decision-state.snapshot-revision",
+      "proofId": "moderation.real-mariadb.decision-revision-explain",
+      "service": "Moderation",
+      "sourceTestPath": "Services/Moderation/Moderation.Tests/Moderation.IntegrationTests/ModerationDecisionExportMariaDbTests.cs",
+      "testFullyQualifiedName": "Moderation.UnitTests.ModerationDecisionExportMariaDbTests.Export_page_query_plan_uses_bounded_coordinate_and_latest_revision_indexes",
+      "expectedIndex": "IX_ModerationDecisionRevision_Case_Cursor",
+      "bounded": {
+        "limitRows": 501,
+        "limitKind": "parameterized-maximum-page-size-plus-one"
+      },
+      "keyset": {
+        "order": [
+          "revisionCursor:desc",
+          "exportCursor:asc"
+        ],
+        "predicateKind": "bounded-snapshot-range"
+      },
+      "normalizedSqlShapeSha256": "b5795bb4f0c8a8afe488f9b1dac475fbd0736dc6f54a3d5d2375ed2de4ae4743"
+    }
+  ]
+}

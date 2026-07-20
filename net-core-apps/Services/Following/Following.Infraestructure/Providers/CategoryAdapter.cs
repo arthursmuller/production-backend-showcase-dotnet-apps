@@ -1,16 +1,43 @@
 using CategoriesProvider.Abstractions;
-using CategoriesProvider.Dtos;
-using Following.Application.Abstractions;
+using Following.Application.Providers.Categories;
+using Following.Infra.Persistence;
+using MessageBrokerContracts.Categories;
+using MessageBrokerCore.Abstractions;
+using MessageBrokerExtensions;
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Following.Infra.Providers
 {
-    public sealed class CategoryAdapter(ICategoriesService categories) : ICategories
+    public sealed class CategoryAdapter(
+        ICategoriesApi categories,
+        IIntegrationMessagePublisher publisher,
+        FollowingContext context,
+        TimeProvider timeProvider) : ICategories
     {
-        public Task<int> GetIdByName(string name) => categories.Api.GetIdByName(name);
+        public Task<int> GetIdByName(string name, CancellationToken cancellationToken) =>
+            categories.GetIdByName(name, cancellationToken);
 
-        public void UpdateFollow(int[] categoryIds, string[] categoryNames, bool isFollowing) =>
-            categories.Broker.UpdateFollow(
-                new UpdateCategoryFollowsDto(categoryIds, categoryNames, isFollowing));
+        public async Task UpdateFollowAsync(
+            int[] categoryIds,
+            string[] categoryNames,
+            bool isFollowing,
+            CancellationToken cancellationToken)
+        {
+            var eventId = Guid.NewGuid();
+            await context.PublishToBusOutboxAsync(
+                publisher,
+                new CategoryFollowsChanged
+                {
+                    EventId = eventId,
+                    OccurredAtUtc = timeProvider.GetUtcNow().UtcDateTime,
+                    CategoryIds = categoryIds ?? [],
+                    CategoryNames = categoryNames ?? [],
+                    IsFollowing = isFollowing,
+                },
+                eventId,
+                cancellationToken);
+        }
     }
 }

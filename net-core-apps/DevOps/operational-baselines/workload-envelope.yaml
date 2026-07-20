@@ -1,0 +1,134 @@
+schema_version: 2
+status: engineering_target_pending_measurement
+owner: backend-architecture
+approver: product-and-sre-approval-required
+decision_due: 2026-08-14
+reviewed_at: 2026-07-17
+evidence_uri: external://release-evidence/workload-envelope
+assumption_class: design_validation_envelope_not_production_forecast
+
+population:
+  registered_users: 10000000
+  dau: 500000
+  mau: 2000000
+  concurrent_users_peak: 100000
+  growth_percent_per_month: 10
+  forecast_horizon_months: 18
+
+traffic:
+  burst_factor: 3
+  capacity_headroom_percent_minimum: 30
+  endpoints:
+    - route: /api/feed/user/auth/items
+      method: GET
+      average_rps: 3000
+      peak_rps: 15000
+      p99_request_bytes: 2048
+      p99_response_bytes: 196608
+      read_write_class: read
+    - route: /api/comments/list
+      method: GET
+      average_rps: 2000
+      peak_rps: 8000
+      p99_request_bytes: 4096
+      p99_response_bytes: 131072
+      read_write_class: read
+    - route: /api/comments
+      method: POST
+      average_rps: 300
+      peak_rps: 1500
+      p99_request_bytes: 65536
+      p99_response_bytes: 8192
+      read_write_class: write
+    - route: /api/relations/users/{id}/relation-ids
+      method: GET
+      average_rps: 800
+      peak_rps: 4000
+      p99_request_bytes: 4096
+      p99_response_bytes: 65536
+      read_write_class: read
+    - route: /api/followings/user/follow
+      method: POST
+      average_rps: 200
+      peak_rps: 1000
+      p99_request_bytes: 16384
+      p99_response_bytes: 8192
+      read_write_class: write
+    - route: /api/resources/{type}/{id}/views
+      method: POST
+      average_rps: 10000
+      peak_rps: 50000
+      p99_request_bytes: 4096
+      p99_response_bytes: 2048
+      read_write_class: append
+    - route: /api/resources/{type}/{id}/reaction
+      method: PUT
+      average_rps: 1000
+      peak_rps: 5000
+      p99_request_bytes: 4096
+      p99_response_bytes: 8192
+      read_write_class: write
+    - route: /api/moderation/reports
+      method: POST
+      average_rps: 10
+      peak_rps: 100
+      p99_request_bytes: 262144
+      p99_response_bytes: 8192
+      read_write_class: restricted_write
+  events:
+    - contract: FeedActivityChanged
+      average_per_second: 800
+      peak_per_second: 4000
+      p99_payload_bytes: 16384
+    - contract: RelationshipEdgeChanged
+      average_per_second: 200
+      peak_per_second: 1000
+      p99_payload_bytes: 4096
+    - contract: EngagementSummaryChanged
+      average_per_second: 1000
+      peak_per_second: 5000
+      p99_payload_bytes: 4096
+    - contract: ModerationDecisionMade
+      average_per_second: 10
+      peak_per_second: 100
+      p99_payload_bytes: 8192
+
+feed:
+  depth_p50: 500
+  depth_p99: 20000
+  followers_p50: 150
+  followers_p95: 5000
+  followers_p99: 100000
+  followers_max: 50000000
+  celebrity_traffic_share_percent: 15
+  high_fanout_enter_threshold: 100000
+  high_fanout_exit_threshold: 80000
+  views_per_second_peak: 50000
+  maximum_pull_publishers_per_page: 64
+  maximum_candidates_per_page: 512
+  maximum_page_size: 50
+
+data:
+  retention_days_by_class:
+    content: until_user_erasure_or_product_retention
+    feed_entries: 90
+    raw_view_observations: 7
+    processed_outbox_inbox: 14
+    moderation_reports: 730
+    moderation_audit: 2555
+    operational_telemetry: 30
+  reports_per_second_peak: 100
+  media_bytes_per_day: 5497558138880
+  row_growth_per_day_by_table:
+    comments: 25920000
+    feed_activities: 69120000
+    feed_entries_materialized: 1200000000
+    following_relationship_changes: 17280000
+    view_observations: 864000000
+    moderation_reports: 864000
+
+safety_gate:
+  no_unowned_tbd: true
+  approved_for_scale_sensitive_design: true
+  approved_for_production_release: false
+  production_release_blocker: representative_load_soak_failover_restore_and_cost_evidence_required

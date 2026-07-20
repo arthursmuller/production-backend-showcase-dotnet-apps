@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\BuildingBlocks\Brokers\MessageBrokerContracts\MessageBrokerContracts.csproj" />
+    <ProjectReference Include="..\..\Interaction.Api\Interaction.Api.csproj" />
+    <ProjectReference Include="..\..\Interaction.Application\Interaction.Application.csproj" />
+    <ProjectReference Include="..\..\Interaction.Domain\Interaction.Domain.csproj" />
+    <ProjectReference Include="..\..\Interaction.Infraestructure\Interaction.Infraestructure.csproj" />
+  </ItemGroup>
+</Project>

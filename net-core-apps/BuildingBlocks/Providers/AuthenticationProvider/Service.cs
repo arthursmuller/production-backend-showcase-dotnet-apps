@@ -1,4 +1,4 @@
-﻿using AuthenticationProvider.Abstractions;
+using AuthenticationProvider.Abstractions;
 using AuthenticationProvider.Providers.Api;
 
 namespace AuthenticationProvider
@@ -7,6 +7,6 @@ namespace AuthenticationProvider
     {
         public IAuthApi Api => _api;
         private readonly IAuthApi _api;
-        public AuthenticationService(IAuthApi api) => (_api) =  (api);
+        public AuthenticationService(IAuthApi api) => (_api) = (api);
     }
 }

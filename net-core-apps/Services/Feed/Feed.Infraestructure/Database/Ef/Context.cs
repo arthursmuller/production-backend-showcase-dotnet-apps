@@ -1,59 +1,41 @@
-﻿using System;
-using System.Linq;
-using System.Data;
-using System.Threading;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Feed.Domain.AggregatesModel;
-using DomainEventing;
-using Mediator;
+using Feed.Domain.AggregatesModel.Moderation;
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
 
 namespace Feed.Infra.Persistence
 {
     public class FeedContext : DbContext
     {
-        public DbSet<UserConnectionsFeed> UserConnectionsFeed { get; set; }
-        public DbSet<Post> Posts { get; set; }
+        public DbSet<FeedActivity> FeedActivities { get; set; }
+        public DbSet<FeedEntry> FeedEntries { get; set; }
+        public DbSet<FeedAudienceEdge> FeedAudienceEdges { get; set; }
+        public DbSet<FeedAudienceBootstrapState> FeedAudienceBootstrapStates { get; set; }
+        public DbSet<FeedRelationshipCheckpoint> FeedRelationshipCheckpoints { get; set; }
+        public DbSet<FeedRelationshipEventQuarantine> FeedRelationshipEventQuarantines { get; set; }
+        public DbSet<FeedUserState> FeedUserStates { get; set; }
+        public DbSet<FanoutWorkItem> FanoutWorkItems { get; set; }
+        public DbSet<FeedPublisherState> FeedPublisherStates { get; set; }
+        public DbSet<FeedRevocationWorkItem> FeedRevocationWorkItems { get; set; }
+        public DbSet<FeedMaintenanceCheckpoint> FeedMaintenanceCheckpoints { get; set; }
+        public DbSet<FeedActivityEventQuarantine> FeedActivityEventQuarantines { get; set; }
+        public DbSet<FeedEngagementSummary> FeedEngagementSummaries { get; set; }
+        public DbSet<FeedEngagementSummaryEventQuarantine> FeedEngagementSummaryEventQuarantines { get; set; }
+        public DbSet<FeedPullCandidateRow> FeedPullCandidateRows { get; set; }
+        public DbSet<FeedUserErasure> FeedUserErasures { get; set; }
+        public DbSet<FeedUserMutationGuard> FeedUserMutationGuards { get; set; }
+        public DbSet<FeedModerationDecisionState> FeedModerationDecisionStates { get; set; }
+        public DbSet<FeedModerationDecisionGap> FeedModerationDecisionGaps { get; set; }
 
-        private readonly IMediator _mediator;
+        public FeedContext(DbContextOptions<FeedContext> options) : base(options) { }
 
-        public FeedContext(DbContextOptions<FeedContext> options, IMediator mediator) : base(options)
-        {
-            _mediator = mediator;
-        }
-
-        /// <summary>
-        /// Dispatches all pending domain events from tracked aggregates
-        /// <em>before</em> persisting to the database so that side effects
-        /// run inside the same EF Core transaction / DbContext scope.
-        /// (eShop deferred domain-events pattern)
-        /// </summary>
-        public async Task<bool> SaveEntitiesAsync(CancellationToken cancellationToken = default)
-        {
-            await _mediator.DispatchDomainEventsAsync(this);
-            await base.SaveChangesAsync(cancellationToken);
-            return true;
-        }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            applyConfigurationsFromAssembly(modelBuilder);
-
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(FeedContext).Assembly);
+            modelBuilder.AddInboxStateEntity();
+            modelBuilder.AddOutboxMessageEntity();
+            modelBuilder.AddOutboxStateEntity();
             base.OnModelCreating(modelBuilder);
-        }
-        private void applyConfigurationsFromAssembly(ModelBuilder modelBuilder)
-        {
-            var configurationTypes = Assembly.GetExecutingAssembly()
-                    .GetTypes()
-                    .Where(type => type.GetInterfaces()
-                        .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntityTypeConfiguration<>)))
-                    .ToList();
-
-            foreach (var configurationType in configurationTypes)
-            {
-                dynamic configurationInstance = Activator.CreateInstance(configurationType);
-                modelBuilder.ApplyConfiguration(configurationInstance);
-            }
         }
     }
 }

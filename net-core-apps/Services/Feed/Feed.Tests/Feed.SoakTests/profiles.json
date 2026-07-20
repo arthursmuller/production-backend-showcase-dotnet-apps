@@ -1,0 +1,73 @@
+{
+  "$schema": "performance-profiles.schema.json",
+  "operations": {
+    "liveness": {
+      "path": "/health/live",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "readiness": {
+      "path": "/health/ready",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "feed-items": {
+      "path": "/api/feed/user/auth/items?pageSize=20&includeSeen=true",
+      "method": "GET",
+      "requiresAuthentication": true
+    }
+  },
+  "profiles": {
+    "smoke": {
+      "enabled": true,
+      "arrivalModel": "periodic-burst",
+      "durationSeconds": 10,
+      "recoverySeconds": 0,
+      "startConcurrency": 1,
+      "concurrency": 1,
+      "targetRps": 1,
+      "requestTimeoutSeconds": 10,
+      "burstEverySeconds": 6,
+      "burstDurationSeconds": 2,
+      "burstMultiplier": 2,
+      "mix": [
+        { "operation": "liveness", "weight": 1 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    },
+    "baseline": {
+      "enabled": false,
+      "arrivalModel": "periodic-burst",
+      "durationSeconds": null,
+      "recoverySeconds": 0,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "burstEverySeconds": 3600,
+      "burstDurationSeconds": 300,
+      "burstMultiplier": 3,
+      "mix": [
+        { "operation": "feed-items", "weight": 30 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    },
+    "representative": {
+      "enabled": false,
+      "arrivalModel": "periodic-burst",
+      "durationSeconds": null,
+      "recoverySeconds": 0,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "burstEverySeconds": 3600,
+      "burstDurationSeconds": 300,
+      "burstMultiplier": 3,
+      "mix": [
+        { "operation": "feed-items", "weight": 30 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    }
+  }
+}

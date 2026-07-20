@@ -1,21 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      Mediator.Abstractions provides INotification and INotificationHandler<>.
-      This package targets netstandard2.1 so it is compatible with net5.0 consumers.
-    -->
-    <PackageReference Include="Mediator.Abstractions" Version="2.1.1" />
-    <!--
-      EF Core is needed only for the MediatorDbContextExtensions helper that
-      dispatches domain events from the DbContext change-tracker before saving.
-    -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.17" />
+    <!-- Mediator.Abstractions provides INotification and INotificationHandler<>. -->
+    <PackageReference Include="Mediator.Abstractions" />
+    <!-- EF Core is used only by the DbContext domain-event dispatch helper. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StarterEntities\StarterEntities.csproj" />
   </ItemGroup>
 
 </Project>

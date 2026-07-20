@@ -2,31 +2,26 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <UserSecretsId>8ef2e75a-b250-4a9c-88c2-23f7ae143856</UserSecretsId>
     <RootNamespace>Comment.API</RootNamespace>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerComposeProjectPath>..\..\..\docker-compose.dcproj</DockerComposeProjectPath>
+    <DockerComposeProjectPath>..\..\..\DevOps\DevOps.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.IdentityModel.Logging" Version="8.16.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
-    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
-    <PackageReference Include="Serilog.Sinks.MySQL" Version="5.0.0" />
-    <!-- Override vulnerable transitive MySql.Data 8.0.33 (System.Drawing.Common chain). -->
-    <PackageReference Include="MySql.Data" Version="9.7.0" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\ApiHost\ApiHost.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\CommomStartupExtensions\CommomStartupExtensions.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\ApiKit\Cqrs\Cqrs.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerCore\MessageBrokerCore.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerRabbitMq\MessageBrokerRabbitMq.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\SqlKit\EfCoreFilters\EfCoreFilters.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerContracts\MessageBrokerContracts.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerExtensions\MessageBrokerExtensions.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\StarterEntities.Storage\StarterEntities.Storage.csproj" />
     <ProjectReference Include="..\Comment.Application\Comment.Application.csproj" />
+    <ProjectReference Include="..\Comment.Domain\Comment.Domain.csproj" />
     <ProjectReference Include="..\Comment.Infraestructure\Comment.Infraestructure.csproj" />
   </ItemGroup>
 

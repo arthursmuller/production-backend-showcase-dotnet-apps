@@ -17,7 +17,7 @@ namespace Following.Infra.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
@@ -31,20 +31,68 @@ namespace Following.Infra.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int")
+                        .HasColumnName("Followed_Id");
+
+                    b.Property<string>("CategoryName")
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)")
+                        .HasColumnName("Followed_Name");
+
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedDate");
 
                     b.Property<DateTime>("UpdateDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdateDate");
+
+                    b.Property<string>("UserDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("User_FullName");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("User_Id");
 
                     b.Property<string>("UserUpdate")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(10)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("SISTEMA")
+                        .HasColumnName("UserUpdate");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("Version");
 
                     b.HasKey("Id");
 
-                    b.ToTable("CategoryFollow", (string)null);
+                    b.HasIndex("CategoryId", "UserId")
+                        .HasDatabaseName("IX_CategoryFollow_Category_User");
+
+                    b.HasIndex("UserId", "CategoryId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_CategoryFollow_User_Category");
+
+                    b.HasIndex("UserId", "Id")
+                        .HasDatabaseName("IX_CategoryFollow_Erase_User");
+
+                    b.HasIndex("UserId", "CreatedDate", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("IX_CategoryFollow_User_Cursor");
+
+                    b.ToTable("CategoryFollow", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_CategoryFollow_PositiveIds", "`User_Id` > 0 AND `Followed_Id` > 0");
+                        });
                 });
 
             modelBuilder.Entity("Following.Domain.AggregatesModel.Follow", b =>
@@ -57,22 +105,155 @@ namespace Following.Infra.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedDate");
+
+                    b.Property<string>("FollowedDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("Followed_FullName");
+
+                    b.Property<int>("FollowedUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("Followed_Id");
+
+                    b.Property<string>("FollowerDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("User_FullName");
+
+                    b.Property<int>("FollowerUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("User_Id");
 
                     b.Property<bool>("IsFollowedBack")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("IsFollowedBack");
 
                     b.Property<DateTime>("UpdateDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdateDate");
 
                     b.Property<string>("UserUpdate")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(10)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("SISTEMA")
+                        .HasColumnName("UserUpdate");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("Version");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Follow", (string)null);
+                    b.HasIndex("FollowedUserId", "Id")
+                        .HasDatabaseName("IX_Follow_Erase_Followed");
+
+                    b.HasIndex("FollowerUserId", "FollowedUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Follow_Direction");
+
+                    b.HasIndex("FollowerUserId", "Id")
+                        .HasDatabaseName("IX_Follow_Erase_Follower");
+
+                    b.HasIndex("FollowedUserId", "CreatedDate", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("IX_Follow_Followed_Cursor");
+
+                    b.HasIndex("FollowerUserId", "CreatedDate", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("IX_Follow_Follower_Cursor");
+
+                    b.ToTable("Follow", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Follow_NoSelf", "`User_Id` <> `Followed_Id`");
+
+                            t.HasCheckConstraint("CK_Follow_PositiveUsers", "`User_Id` > 0 AND `Followed_Id` > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Following.Domain.AggregatesModel.FollowingUserErasure", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid?>("CompletionEventId")
+                        .HasColumnType("char(36)")
+                        .UseCollation("ascii_general_ci");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long>("Cursor")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ErasureVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("LeaseExpiresAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("LeaseOwner")
+                        .HasMaxLength(128)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<long>("LeaseToken")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("char(36)")
+                        .UseCollation("ascii_general_ci");
+
+                    b.Property<DateTime>("RequestedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L);
+
+                    b.Property<byte>("Stage")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("Status")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Status", "LeaseExpiresAtUtc", "UpdatedAtUtc", "UserId")
+                        .HasDatabaseName("IX_FollowingUserErasure_Claim");
+
+                    b.ToTable("FollowingUserErasure", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FollowingUserErasure_Cursor", "`Cursor` >= 0");
+
+                            t.HasCheckConstraint("CK_FollowingUserErasure_LeaseToken", "`LeaseToken` >= 0");
+
+                            t.HasCheckConstraint("CK_FollowingUserErasure_Stage", "`Stage` BETWEEN 0 AND 14");
+
+                            t.HasCheckConstraint("CK_FollowingUserErasure_Status", "`Status` BETWEEN 0 AND 2");
+
+                            t.HasCheckConstraint("CK_FollowingUserErasure_User", "`UserId` > 0");
+
+                            t.HasCheckConstraint("CK_FollowingUserErasure_Version", "`ErasureVersion` > 0");
+                        });
                 });
 
             modelBuilder.Entity("Following.Domain.AggregatesModel.FriendRequest", b =>
@@ -84,23 +265,105 @@ namespace Following.Infra.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool?>("Approved")
-                        .HasColumnType("tinyint(1)");
+                    b.Property<int?>("ActivePairMaxUserId")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("int")
+                        .HasComputedColumnSql("CASE WHEN `Status` = 0 THEN GREATEST(`User_Id`, `Friend_Id`) ELSE NULL END", true);
+
+                    b.Property<int?>("ActivePairMinUserId")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("int")
+                        .HasComputedColumnSql("CASE WHEN `Status` = 0 THEN LEAST(`User_Id`, `Friend_Id`) ELSE NULL END", true);
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedDate");
+
+                    b.Property<int>("PairMaxUserId")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("int")
+                        .HasComputedColumnSql("GREATEST(`User_Id`, `Friend_Id`)", true);
+
+                    b.Property<int>("PairMinUserId")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("int")
+                        .HasComputedColumnSql("LEAST(`User_Id`, `Friend_Id`)", true);
+
+                    b.Property<string>("RecipientDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("Friend_FullName");
+
+                    b.Property<int>("RecipientUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("Friend_Id");
+
+                    b.Property<string>("SenderDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("User_FullName");
+
+                    b.Property<int>("SenderUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("User_Id");
+
+                    b.Property<byte>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("Status");
 
                     b.Property<DateTime>("UpdateDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdateDate");
 
                     b.Property<string>("UserUpdate")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(10)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("SISTEMA")
+                        .HasColumnName("UserUpdate");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("Version");
 
                     b.HasKey("Id");
 
-                    b.ToTable("FriendRequest", (string)null);
+                    b.HasIndex("ActivePairMinUserId", "ActivePairMaxUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_FriendRequest_ActivePair");
+
+                    b.HasIndex("RecipientUserId", "Id")
+                        .HasDatabaseName("IX_FriendRequest_Erase_Recipient");
+
+                    b.HasIndex("SenderUserId", "Id")
+                        .HasDatabaseName("IX_FriendRequest_Erase_Sender");
+
+                    b.HasIndex("PairMinUserId", "PairMaxUserId", "Status")
+                        .HasDatabaseName("IX_FriendRequest_Pair_Status");
+
+                    b.HasIndex("RecipientUserId", "Status", "CreatedDate", "Id")
+                        .IsDescending(false, false, true, true)
+                        .HasDatabaseName("IX_FriendRequest_Recipient_Status_Cursor");
+
+                    b.HasIndex("SenderUserId", "Status", "CreatedDate", "Id")
+                        .IsDescending(false, false, true, true)
+                        .HasDatabaseName("IX_FriendRequest_Sender_Status_Cursor");
+
+                    b.ToTable("FriendRequest", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FriendRequest_NoSelf", "`User_Id` <> `Friend_Id`");
+
+                            t.HasCheckConstraint("CK_FriendRequest_PositiveUsers", "`User_Id` > 0 AND `Friend_Id` > 0");
+
+                            t.HasCheckConstraint("CK_FriendRequest_Status", "`Status` BETWEEN 0 AND 3");
+                        });
                 });
 
             modelBuilder.Entity("Following.Domain.AggregatesModel.Friendship", b =>
@@ -113,19 +376,86 @@ namespace Following.Infra.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedDate");
+
+                    b.Property<string>("FriendDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("Friend_FullName");
+
+                    b.Property<int>("FriendUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("Friend_Id");
+
+                    b.Property<int>("PairMaxUserId")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("int")
+                        .HasComputedColumnSql("GREATEST(`User_Id`, `Friend_Id`)", true);
+
+                    b.Property<int>("PairMinUserId")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("int")
+                        .HasComputedColumnSql("LEAST(`User_Id`, `Friend_Id`)", true);
 
                     b.Property<DateTime>("UpdateDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdateDate");
+
+                    b.Property<string>("UserDisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("User_FullName");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("User_Id");
 
                     b.Property<string>("UserUpdate")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(10)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("SISTEMA")
+                        .HasColumnName("UserUpdate");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("Version");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Friendship", (string)null);
+                    b.HasIndex("FriendUserId", "Id")
+                        .HasDatabaseName("IX_Friendship_Erase_Friend");
+
+                    b.HasIndex("PairMinUserId", "PairMaxUserId")
+                        .HasDatabaseName("IX_Friendship_NormalizedPair");
+
+                    b.HasIndex("UserId", "FriendUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Friendship_Direction");
+
+                    b.HasIndex("UserId", "Id")
+                        .HasDatabaseName("IX_Friendship_Erase_User");
+
+                    b.HasIndex("FriendUserId", "CreatedDate", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("IX_Friendship_Reverse_Cursor");
+
+                    b.HasIndex("UserId", "CreatedDate", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("IX_Friendship_User_Cursor");
+
+                    b.ToTable("Friendship", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Friendship_NoSelf", "`User_Id` <> `Friend_Id`");
+
+                            t.HasCheckConstraint("CK_Friendship_PositiveUsers", "`User_Id` > 0 AND `Friend_Id` > 0");
+                        });
                 });
 
             modelBuilder.Entity("Following.Domain.AggregatesModel.FriendshipSubscriptionFeature", b =>
@@ -138,7 +468,8 @@ namespace Following.Infra.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedDate");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime(6)");
@@ -150,22 +481,137 @@ namespace Following.Infra.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("SubscriptionId")
-                        .HasColumnType("longtext");
+                        .IsRequired()
+                        .HasMaxLength(191)
+                        .HasColumnType("varchar(191)");
 
                     b.Property<DateTime>("UpdateDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdateDate");
 
                     b.Property<string>("UserUpdate")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(10)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("SISTEMA")
+                        .HasColumnName("UserUpdate");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("Version");
 
                     b.HasKey("Id");
 
-                    b.ToTable("FriendshipSubscriptionFeature", (string)null);
+                    b.HasIndex("EndDate", "Id")
+                        .HasDatabaseName("IX_SubscriptionFeature_Expiry");
+
+                    b.HasIndex("OwnerId", "Id")
+                        .HasDatabaseName("IX_Subscription_Erase_Owner");
+
+                    b.HasIndex("RequesterId", "Id")
+                        .HasDatabaseName("IX_Subscription_Erase_Requester");
+
+                    b.HasIndex("OwnerId", "RequesterId", "SubscriptionId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_SubscriptionFeature_Owner_Requester_Subscription");
+
+                    b.ToTable("FriendshipSubscriptionFeature", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_SubscriptionFeature_NoSelf", "`OwnerId` <> `RequesterId`");
+
+                            t.HasCheckConstraint("CK_SubscriptionFeature_PositiveUsers", "`OwnerId` > 0 AND `RequesterId` > 0");
+                        });
                 });
 
-            modelBuilder.Entity("Following.Domain.AggregatesModel.UserRelationAnalytics", b =>
+            modelBuilder.Entity("Following.Domain.AggregatesModel.RelationshipEventStream", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CurrentState")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("varchar(24)");
+
+                    b.Property<long>("CurrentVersion")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("LastEventId")
+                        .HasColumnType("char(36)")
+                        .UseCollation("ascii_general_ci");
+
+                    b.Property<DateTime>("LastOccurredAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("OwnerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelationshipKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<Guid>("StreamId")
+                        .HasColumnType("char(36)")
+                        .UseCollation("ascii_general_ci");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L);
+
+                    b.Property<int>("ViewerUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StreamId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_RelationshipEventStream_StreamId");
+
+                    b.HasIndex("OwnerUserId", "Id")
+                        .HasDatabaseName("IX_RelStream_Erase_Owner");
+
+                    b.HasIndex("UpdatedAtUtc", "Id")
+                        .HasDatabaseName("IX_RelationshipEventStream_Updated_Cursor");
+
+                    b.HasIndex("ViewerUserId", "Id")
+                        .HasDatabaseName("IX_RelStream_Erase_Viewer");
+
+                    b.HasIndex("OwnerUserId", "ViewerUserId", "RelationshipKind")
+                        .IsUnique()
+                        .HasDatabaseName("UX_RelationshipEventStream_Direction_Kind");
+
+                    b.ToTable("RelationshipEventStream", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_RelationshipEventStream_CurrentVersion", "`CurrentVersion` > 0");
+
+                            t.HasCheckConstraint("CK_RelationshipEventStream_Directional", "`OwnerUserId` <> `ViewerUserId`");
+
+                            t.HasCheckConstraint("CK_RelationshipEventStream_Owner", "`OwnerUserId` > 0");
+
+                            t.HasCheckConstraint("CK_RelationshipEventStream_Version", "`Version` > 0");
+
+                            t.HasCheckConstraint("CK_RelationshipEventStream_Viewer", "`ViewerUserId` > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Following.Domain.AggregatesModel.UserBlock", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -174,8 +620,75 @@ namespace Following.Infra.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("BlockedUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BlockerUserId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedDate");
+
+                    b.Property<DateTime>("UpdateDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdateDate");
+
+                    b.Property<string>("UserUpdate")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("SISTEMA")
+                        .HasColumnName("UserUpdate");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("Version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BlockedUserId", "BlockerUserId")
+                        .HasDatabaseName("IX_UserBlock_ReverseDirection");
+
+                    b.HasIndex("BlockedUserId", "Id")
+                        .HasDatabaseName("IX_UserBlock_Erase_Blocked");
+
+                    b.HasIndex("BlockerUserId", "BlockedUserId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_UserBlock_Direction");
+
+                    b.HasIndex("BlockerUserId", "Id")
+                        .HasDatabaseName("IX_UserBlock_Erase_Blocker");
+
+                    b.HasIndex("BlockerUserId", "CreatedDate", "Id")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("IX_UserBlock_Blocker_Cursor");
+
+                    b.ToTable("UserBlock", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_UserBlock_NoSelf", "`BlockerUserId` <> `BlockedUserId`");
+
+                            t.HasCheckConstraint("CK_UserBlock_PositiveUsers", "`BlockerUserId` > 0 AND `BlockedUserId` > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Following.Domain.AggregatesModel.UserRelationAnalytics", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    b.Property<byte>("ShardId")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("CreatedDate");
 
                     b.Property<int>("TotalCategoriesFollowed")
                         .HasColumnType("int");
@@ -193,196 +706,215 @@ namespace Following.Infra.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdateDate")
-                        .HasColumnType("datetime(6)");
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("UpdateDate");
 
                     b.Property<string>("UserUpdate")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(10)
                         .IsUnicode(false)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("SISTEMA")
+                        .HasColumnName("UserUpdate");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(1L)
+                        .HasColumnName("Version");
+
+                    b.HasKey("Id", "ShardId");
+
+                    b.ToTable("UserRelationAnalytics", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_UserRelationAnalytics_NonNegative", "`TotalFriends` >= 0 AND `TotalFollowers` >= 0 AND `TotalFollowing` >= 0 AND `TotalCategoriesFollowed` >= 0 AND `TotalFriendsRequests` >= 0");
+
+                            t.HasCheckConstraint("CK_UserRelationAnalytics_PositiveId", "`Id` > 0");
+
+                            t.HasCheckConstraint("CK_UserRelationAnalytics_Shard", "`ShardId` BETWEEN 0 AND 63");
+                        });
+                });
+
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.InboxState", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("Consumed")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("ConsumerId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("Delivered")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("ExpirationTime")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long?>("LastSequenceNumber")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("LockId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("ReceiveCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Received")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("UserRelationAnalytics", (string)null);
+                    b.HasIndex("Delivered");
+
+                    b.ToTable("InboxState");
                 });
 
-            modelBuilder.Entity("Following.Domain.AggregatesModel.CategoryFollow", b =>
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
                 {
-                    b.OwnsOne("StarterEntities.User", "User", b1 =>
-                        {
-                            b1.Property<int>("CategoryFollowId")
-                                .HasColumnType("int");
+                    b.Property<long>("SequenceNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
 
-                            b1.Property<string>("FullName")
-                                .HasColumnType("longtext");
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("SequenceNumber"));
 
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
-                            b1.HasKey("CategoryFollowId");
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
 
-                            b1.ToTable("CategoryFollow");
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("char(36)");
 
-                            b1.WithOwner()
-                                .HasForeignKey("CategoryFollowId");
-                        });
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("char(36)");
 
-                    b.OwnsOne("StarterEntities.CategoryRecord", "Followed", b1 =>
-                        {
-                            b1.Property<int>("CategoryFollowId")
-                                .HasColumnType("int");
+                    b.Property<string>("DestinationAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
 
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
+                    b.Property<DateTime?>("EnqueueTime")
+                        .HasColumnType("datetime(6)");
 
-                            b1.Property<string>("Name")
-                                .HasColumnType("longtext");
+                    b.Property<DateTime?>("ExpirationTime")
+                        .HasColumnType("datetime(6)");
 
-                            b1.HasKey("CategoryFollowId");
+                    b.Property<string>("FaultAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
 
-                            b1.ToTable("CategoryFollow");
+                    b.Property<string>("Headers")
+                        .HasColumnType("longtext");
 
-                            b1.WithOwner()
-                                .HasForeignKey("CategoryFollowId");
-                        });
+                    b.Property<Guid?>("InboxConsumerId")
+                        .HasColumnType("char(36)");
 
-                    b.Navigation("Followed");
+                    b.Property<Guid?>("InboxMessageId")
+                        .HasColumnType("char(36)");
 
-                    b.Navigation("User");
+                    b.Property<Guid?>("InitiatorId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid?>("OutboxId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Properties")
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid?>("RequestId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ResponseAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<DateTime>("SentTime")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("SourceAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.HasKey("SequenceNumber");
+
+                    b.HasIndex("EnqueueTime");
+
+                    b.HasIndex("ExpirationTime");
+
+                    b.HasIndex("OutboxId", "SequenceNumber")
+                        .IsUnique();
+
+                    b.HasIndex("InboxMessageId", "InboxConsumerId", "SequenceNumber")
+                        .IsUnique();
+
+                    b.ToTable("OutboxMessage");
                 });
 
-            modelBuilder.Entity("Following.Domain.AggregatesModel.Follow", b =>
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxState", b =>
                 {
-                    b.OwnsOne("StarterEntities.User", "Followed", b1 =>
-                        {
-                            b1.Property<int>("FollowId")
-                                .HasColumnType("int");
+                    b.Property<Guid>("OutboxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
 
-                            b1.Property<string>("FullName")
-                                .HasColumnType("longtext");
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime(6)");
 
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
+                    b.Property<DateTime?>("Delivered")
+                        .HasColumnType("datetime(6)");
 
-                            b1.HasKey("FollowId");
+                    b.Property<long?>("LastSequenceNumber")
+                        .HasColumnType("bigint");
 
-                            b1.ToTable("Follow");
+                    b.Property<Guid>("LockId")
+                        .HasColumnType("char(36)");
 
-                            b1.WithOwner()
-                                .HasForeignKey("FollowId");
-                        });
+                    b.Property<DateTime?>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp(6)");
 
-                    b.OwnsOne("StarterEntities.User", "User", b1 =>
-                        {
-                            b1.Property<int>("FollowId")
-                                .HasColumnType("int");
+                    b.HasKey("OutboxId");
 
-                            b1.Property<string>("FullName")
-                                .HasColumnType("longtext");
+                    b.HasIndex("Created");
 
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
-
-                            b1.HasKey("FollowId");
-
-                            b1.ToTable("Follow");
-
-                            b1.WithOwner()
-                                .HasForeignKey("FollowId");
-                        });
-
-                    b.Navigation("Followed");
-
-                    b.Navigation("User");
+                    b.ToTable("OutboxState");
                 });
 
-            modelBuilder.Entity("Following.Domain.AggregatesModel.FriendRequest", b =>
+            modelBuilder.Entity("MassTransit.EntityFrameworkCoreIntegration.OutboxMessage", b =>
                 {
-                    b.OwnsOne("StarterEntities.User", "Friend", b1 =>
-                        {
-                            b1.Property<int>("FriendRequestId")
-                                .HasColumnType("int");
+                    b.HasOne("MassTransit.EntityFrameworkCoreIntegration.OutboxState", null)
+                        .WithMany()
+                        .HasForeignKey("OutboxId");
 
-                            b1.Property<string>("FullName")
-                                .HasColumnType("longtext");
-
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
-
-                            b1.HasKey("FriendRequestId");
-
-                            b1.ToTable("FriendRequest");
-
-                            b1.WithOwner()
-                                .HasForeignKey("FriendRequestId");
-                        });
-
-                    b.OwnsOne("StarterEntities.User", "User", b1 =>
-                        {
-                            b1.Property<int>("FriendRequestId")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("FullName")
-                                .HasColumnType("longtext");
-
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
-
-                            b1.HasKey("FriendRequestId");
-
-                            b1.ToTable("FriendRequest");
-
-                            b1.WithOwner()
-                                .HasForeignKey("FriendRequestId");
-                        });
-
-                    b.Navigation("Friend");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Following.Domain.AggregatesModel.Friendship", b =>
-                {
-                    b.OwnsOne("StarterEntities.User", "Friend", b1 =>
-                        {
-                            b1.Property<int>("FriendshipId")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("FullName")
-                                .HasColumnType("longtext");
-
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
-
-                            b1.HasKey("FriendshipId");
-
-                            b1.ToTable("Friendship");
-
-                            b1.WithOwner()
-                                .HasForeignKey("FriendshipId");
-                        });
-
-                    b.OwnsOne("StarterEntities.User", "User", b1 =>
-                        {
-                            b1.Property<int>("FriendshipId")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("FullName")
-                                .HasColumnType("longtext");
-
-                            b1.Property<int>("Id")
-                                .HasColumnType("int");
-
-                            b1.HasKey("FriendshipId");
-
-                            b1.ToTable("Friendship");
-
-                            b1.WithOwner()
-                                .HasForeignKey("FriendshipId");
-                        });
-
-                    b.Navigation("Friend");
-
-                    b.Navigation("User");
+                    b.HasOne("MassTransit.EntityFrameworkCoreIntegration.InboxState", null)
+                        .WithMany()
+                        .HasForeignKey("InboxMessageId", "InboxConsumerId")
+                        .HasPrincipalKey("MessageId", "ConsumerId");
                 });
 #pragma warning restore 612, 618
         }

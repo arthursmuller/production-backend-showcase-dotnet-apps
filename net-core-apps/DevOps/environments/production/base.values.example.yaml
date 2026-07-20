@@ -1,0 +1,49 @@
+# Render-only production shape. Replace every documentation address, identity
+# annotation, secret name, repository, and digest in a protected environment overlay.
+service:
+  enabled: true
+  automountServiceAccountToken: false
+  commonEnv:
+    ASPNETCORE_ENVIRONMENT: Production
+    ASPNETCORE_HTTP_PORTS: "8080"
+    DOTNET_EnableDiagnostics: "0"
+    Logging__LogLevel__Default: Information
+    Database__RequireTls: "true"
+    Database__SlowQueryThresholdMilliseconds: "250"
+    Broker__RabbitMq__Tls__Enabled: "true"
+    Cors__AllowedOrigins__0: https://www.inspacy.com
+    Cors__AllowedOrigins__1: https://www.inspacy.com.br
+    Traffic__KnownProxies__0: 192.0.2.20
+    OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-gateway.observability.svc:4317
+
+networkPolicy:
+  edgeNamespaceSelector:
+    inspacy.io/edge: "true"
+  edgePodSelector:
+    inspacy.io/network-role: edge
+  monitoringNamespaceSelector:
+    inspacy.io/monitoring: "true"
+  monitoringPodSelector:
+    inspacy.io/network-role: monitoring
+  clusterEgress:
+    - namespaceSelector: { kubernetes.io/metadata.name: identity }
+      podSelector: { app.kubernetes.io/name: identity }
+      ports: [{ protocol: TCP, port: 443 }]
+    - namespaceSelector: { kubernetes.io/metadata.name: observability }
+      podSelector: { app.kubernetes.io/name: opentelemetry-collector }
+      ports: [{ protocol: TCP, port: 4317 }]
+  externalEgress:
+    # RFC 5737 documentation addresses make this overlay non-deployable as-is.
+    - cidr: 192.0.2.10/32
+      ports: [{ protocol: TCP, port: 3306 }]
+    - cidr: 192.0.2.11/32
+      ports: [{ protocol: TCP, port: 5671 }]
+    - cidr: 192.0.2.13/32
+      ports: [{ protocol: TCP, port: 443 }]
+  # Migration never inherits runtime broker/cache egress. Its DDL Secret and
+  # workload identity are intentionally different from every runtime role.
+  migrationExternalEgress:
+    - cidr: 192.0.2.10/32
+      ports: [{ protocol: TCP, port: 3306 }]
+    - cidr: 192.0.2.13/32
+      ports: [{ protocol: TCP, port: 443 }]

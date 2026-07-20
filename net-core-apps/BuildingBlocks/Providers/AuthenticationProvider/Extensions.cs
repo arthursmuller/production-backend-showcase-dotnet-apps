@@ -1,30 +1,43 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using AuthenticationProvider.Abstractions;
-using System;
-using HttpClientHelper;
 using AuthenticationProvider.Providers.Api;
+using HttpClientHelper;
+using InspacyApiHost;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using System;
 
-namespace AuthenticationProvider
+namespace AuthenticationProvider;
+
+public static class AuthenticationProviderExtensions
 {
-    public static class AuthenticationProviderExtensions
+    public static IServiceCollection ConfigureAuthenticationProvider(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        public static IServiceCollection ConfigureAuthenticationProvider(this IServiceCollection services, IConfiguration configuration)
-        {
-            ConfigureApi(services);
-            services.AddScoped<IAuthService, AuthenticationService>();
+        services.AddPlatformTimeProvider();
+        services.TryAddSingleton<AccessTokenCache>();
+        ConfigureApi(services, configuration);
+        services.AddScoped<IAuthService, AuthenticationService>();
 
-            return services;
-        }
-
-        private static void ConfigureApi(IServiceCollection services)
-        {
-            var url = GetSetting("IDENTITY_SERVICE_URL");
-
-            if (!string.IsNullOrEmpty(url))
-                HttpProvider.New<IAuthApi, AuthenticationApiProvider>(services, url);
-        }
-
-        private static string GetSetting(string setting) => Environment.GetEnvironmentVariable(setting);
+        return services;
     }
+
+    private static void ConfigureApi(IServiceCollection services, IConfiguration configuration)
+    {
+        var url = GetServiceUrl(configuration);
+
+        if (!string.IsNullOrEmpty(url))
+        {
+            // Client-credential token requests are POSTs but do not mutate
+            // application state, so a transient retry is safe at this boundary.
+            HttpProvider.New<IAuthApi, AuthenticationApiProvider>(
+                services,
+                url,
+                retryUnsafeMethods: true);
+        }
+    }
+
+    private static string? GetServiceUrl(IConfiguration configuration) =>
+        configuration["Identity:ServiceUrl"];
 }

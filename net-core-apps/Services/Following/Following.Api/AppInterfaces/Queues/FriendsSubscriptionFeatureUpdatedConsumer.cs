@@ -1,62 +1,65 @@
+using Following.Application.Dtos;
 using Following.Application.Features.Subscriptions;
-using Following.Application.MessageBrokers.Messages;
+using Following.Infra.Persistence;
+using Following.Domain.Exceptions;
+using MassTransit;
+using MessageBrokerContracts.Following;
 using MessageBrokerCore.Constants;
-using MessageBrokerRabbitMq;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using MessageBrokerExtensions;
 using System;
 using System.Threading.Tasks;
 
 namespace Following.API.AppInterfaces.Queues
 {
-    public class FriendsSubscriptionFeatureUpdatedConsumer : MessageBrokerRabbitMQ
+    public sealed class FriendsSubscriptionFeatureUpdatedConsumer(
+        SetFriendsSubscriptionFeatureCommand command)
+        : IConsumer<SubscriptionFeatureUpdated>
     {
-        private readonly ILogger<FriendsSubscriptionFeatureUpdatedConsumer> _logger;
-        private readonly IServiceProvider _services;
-
-        public FriendsSubscriptionFeatureUpdatedConsumer(
-            IServiceProvider services,
-            int retryCount,
-            ILogger<FriendsSubscriptionFeatureUpdatedConsumer> logger)
-            : base(
-                services,
-                Topology.Posts.EventsExchange,
-                Topology.Following.SubscriptionFeatureNetworking.RoutingKey,
-                Topology.Following.SubscriptionFeatureNetworking.Queues.Following.FollowingQueue,
-                retryCount)
-        {
-            _logger = logger;
-            _services = services;
-            CreateConnection();
-            RegisterQueue();
-        }
-
-        public override async Task ProcessMessageAsync(string message)
+        public async Task Consume(ConsumeContext<SubscriptionFeatureUpdated> context)
         {
             try
             {
-                var payload = JsonConvert.DeserializeObject<SubscriptionFeatureUpdatedMessage>(message);
-                if (payload?.Dto is null)
-                    return;
-
-                using var scope = _services.CreateScope();
-                var command = scope.ServiceProvider
-                    .GetRequiredService<SetFriendsSubscriptionFeatureCommand>();
-                await command.Handle(payload.Dto);
+                await command.Handle(Map(context.Message), context.CancellationToken);
             }
-            catch (Exception exception)
+            catch (FollowingException exception) when (exception.StatusCode == 410)
             {
-                var consumerName = GetType().Name;
-                _logger.LogInformation(
-                    "{ConsumerName}: message processing failed. Error: {Message}; StackTrace: {StackTrace}; Payload: {Payload}",
-                    consumerName,
-                    exception.Message,
-                    exception.StackTrace,
-                    message);
-                _logger.LogError(exception, "{ConsumerName}: message processing failed", consumerName);
-                throw;
+                // A durable privacy tombstone is a terminal rejection for delayed subscription
+                // replays; acknowledge it instead of building a permanent broker poison loop.
             }
+        }
+
+        internal static SubscriptionFeatureUpdatedDto Map(
+            SubscriptionFeatureUpdated message)
+        {
+            ArgumentNullException.ThrowIfNull(message);
+            ArgumentNullException.ThrowIfNull(message.Owner);
+            ArgumentNullException.ThrowIfNull(message.Requester);
+            if (message.EventId == Guid.Empty
+                || message.OccurredAtUtc.Kind != DateTimeKind.Utc
+                || message.EndDateUtc is { Kind: not DateTimeKind.Utc })
+            {
+                throw new InvalidOperationException(
+                    "The subscription feature update envelope is invalid.");
+            }
+
+            return new SubscriptionFeatureUpdatedDto(
+                new SubscriptionFeatureUpdatedUserDto(
+                    message.Owner.UserId,
+                    message.Owner.DisplayName),
+                new SubscriptionFeatureUpdatedUserDto(
+                    message.Requester.UserId,
+                    message.Requester.DisplayName),
+                message.SubscriptionId,
+                message.EndDateUtc);
+        }
+    }
+
+    public sealed class FriendsSubscriptionFeatureUpdatedConsumerDefinition
+        : EntityFrameworkOutboxConsumerDefinition<FriendsSubscriptionFeatureUpdatedConsumer, FollowingContext>
+    {
+        public FriendsSubscriptionFeatureUpdatedConsumerDefinition()
+            : base(Topology.Following.SubscriptionFeatureNetworking.Queue)
+        {
         }
     }
 }

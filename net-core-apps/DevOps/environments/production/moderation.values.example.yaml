@@ -1,0 +1,33 @@
+service:
+  name: moderation
+  image:
+    repository: registry.invalid/inspacy/moderation-api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  commonEnv:
+    Traffic__MaxConcurrentRequestsPerReplica: "128"
+roles:
+  api:
+    # moderation-api-runtime must expose DecisionExport__CursorSigningKey and
+    # Moderation__Privacy__SubjectLookupKey as independent base64 values for at
+    # least 32 random bytes. Consumer/job Secrets also need the privacy key;
+    # migration Secrets must omit both values.
+    secretName: moderation-api-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    autoscaling: { maxReplicas: 20 }
+  consumer:
+    secretName: moderation-consumer-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    autoscaling: { maxReplicas: 20 }
+  job:
+    secretName: moderation-job-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    env:
+      # Destructive workflows stay inert until an approved production runbook
+      # reference is supplied in the release-specific values.
+      Moderation__Erasure__Enabled: "false"
+      Moderation__Erasure__ApprovalReference: ""
+      Moderation__Retention__Enabled: "false"
+      Moderation__Retention__ApprovalReference: ""
+migration:
+  secretName: moderation-migration
+  certificateSecretKey: secret-provider-client.pfx

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "deploymentStatus": "example-not-deployed",
+  "owner": "Platform/SRE and Security",
+  "providerBinding": {
+    "status": "required-before-production",
+    "resourceIdentifiers": "restricted-release-evidence",
+    "exportDigestRequired": true,
+    "configurationRevisionRequired": true
+  },
+  "networkBoundary": {
+    "managedDdosProtectionRequired": true,
+    "privateOriginRequired": true,
+    "directPublicOriginAccessAllowed": false,
+    "originAuthenticationRequired": true
+  },
+  "tls": {
+    "minimumVersion": "1.2",
+    "managedCertificateRotationRequired": true,
+    "httpRedirectToHttps": true
+  },
+  "forwardedHeaders": {
+    "mode": "overwrite-at-edge",
+    "acceptOnlyFromConfiguredProxyRanges": true,
+    "documentationOnlyProxyRanges": [
+      "192.0.2.0/24"
+    ],
+    "stripCallerIdentityHeaders": [
+      "X-User-Id",
+      "X-Actor-Id",
+      "X-Moderator-Id",
+      "X-Authenticated-User",
+      "X-Forwarded-User"
+    ]
+  },
+  "waf": {
+    "managedRuleSetsRequired": true,
+    "owaspCoverageRequired": true,
+    "knownBadInputBlockingRequired": true,
+    "requestBodyInspectionRequiredForMutationRoutes": true,
+    "failOpenAllowed": false,
+    "ruleExclusionsRequireSecurityApproval": true
+  },
+  "distributedRateLimit": {
+    "required": true,
+    "thresholdSource": "DevOps/operational-baselines/workload-envelope.yaml",
+    "boundedPartitionCardinalityRequired": true,
+    "allowedPartitionClasses": [
+      "source-network-prefix",
+      "canonical-route-class",
+      "validated-principal-hash"
+    ],
+    "attackerControlledHeaderPartitionAllowed": false,
+    "overLimitResponseStatus": 429,
+    "retryAfterRequired": true
+  },
+  "routeControls": {
+    "canonicalOpenApiInventoryRequired": true,
+    "defaultPublicRouteAction": "deny",
+    "moderationRoutesRequireRestrictedGatewayPolicy": true,
+    "mediaMutationRoutesRequireFailClosedScannerDependencyPolicy": true,
+    "healthExposure": [
+      "/health/live",
+      "/health/ready"
+    ]
+  },
+  "logging": {
+    "requestBodiesAllowed": false,
+    "authorizationHeadersAllowed": false,
+    "cookieValuesAllowed": false,
+    "queryValuesAllowedByDefault": false,
+    "stableRuleAndRequestIdentifiersRequired": true,
+    "restrictedRetentionApprovalRequired": true
+  },
+  "validationRequired": [
+    "direct-origin access denied",
+    "caller identity and forwarded header spoofing denied",
+    "TLS and certificate rotation verified",
+    "managed WAF rules block approved harmless fixtures",
+    "distributed limits return 429 with Retry-After",
+    "route inventory matches the signed OpenAPI baseline",
+    "provider export digest is attached to the release record"
+  ]
+}

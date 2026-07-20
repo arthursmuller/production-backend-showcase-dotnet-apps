@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inspacy.local/schemas/performance-profiles.schema.json",
+  "title": "Performance operation catalogs and workload profiles",
+  "type": "object",
+  "required": ["$schema", "operations", "profiles"],
+  "properties": {
+    "$schema": { "const": "performance-profiles.schema.json" },
+    "operations": {
+      "type": "object",
+      "minProperties": 2,
+      "maxProperties": 32,
+      "propertyNames": {
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Za-z0-9._-]+$"
+      },
+      "additionalProperties": { "$ref": "#/$defs/operation" }
+    },
+    "profiles": {
+      "type": "object",
+      "required": ["smoke", "baseline", "representative"],
+      "additionalProperties": false,
+      "properties": {
+        "smoke": { "$ref": "#/$defs/profile" },
+        "baseline": { "$ref": "#/$defs/profile" },
+        "representative": { "$ref": "#/$defs/profile" }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "operation": {
+      "type": "object",
+      "required": ["path", "method", "requiresAuthentication"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^/(?!/)[^#\\r\\n\\\\]*$"
+        },
+        "method": { "enum": ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"] },
+        "body": { "type": ["string", "null"], "maxLength": 262144 },
+        "contentType": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "requiresAuthentication": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "method": { "enum": ["GET", "HEAD"] } } },
+          "then": { "properties": { "body": { "type": "null" } } }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "mixEntry": {
+      "type": "object",
+      "required": ["operation", "weight"],
+      "properties": {
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "weight": { "type": "integer", "minimum": 1, "maximum": 10000 }
+      },
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "object",
+      "required": ["enabled", "arrivalModel", "mix"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "arrivalModel": {
+          "enum": [
+            "paced-fixed-rate",
+            "linear-concurrency-ramp-with-recovery",
+            "periodic-burst"
+          ]
+        },
+        "durationSeconds": { "type": ["integer", "null"], "minimum": 1, "maximum": 604800 },
+        "recoverySeconds": { "type": ["integer", "null"], "minimum": 0 },
+        "startConcurrency": { "type": ["integer", "null"], "minimum": 1, "maximum": 10000 },
+        "concurrency": { "type": ["integer", "null"], "minimum": 1, "maximum": 10000 },
+        "targetRps": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1000000 },
+        "requestTimeoutSeconds": { "type": ["integer", "null"], "minimum": 1, "maximum": 300 },
+        "burstEverySeconds": { "type": ["integer", "null"], "minimum": 1 },
+        "burstDurationSeconds": { "type": ["integer", "null"], "minimum": 1 },
+        "burstMultiplier": { "type": ["number", "null"], "exclusiveMinimum": 1, "maximum": 100 },
+        "mix": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/mixEntry" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

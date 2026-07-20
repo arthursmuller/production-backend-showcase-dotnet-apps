@@ -1,0 +1,55 @@
+service:
+  enabled: true
+  name: comment
+  image:
+    repository: registry.invalid/inspacy/comment-api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  automountServiceAccountToken: true
+  commonEnv:
+    OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-gateway.observability.svc:4317
+roles:
+  api:
+    secretName: comment-api-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    serviceAccountAnnotations:
+      workload.identity/client-id: comment-api
+  consumer:
+    secretName: comment-consumer-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    serviceAccountAnnotations:
+      workload.identity/client-id: comment-consumer
+  job:
+    secretName: comment-job-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    serviceAccountAnnotations:
+      workload.identity/client-id: comment-job
+migration:
+  secretName: comment-migration
+  certificateSecretKey: secret-provider-client.pfx
+  serviceAccountAnnotations:
+    workload.identity/client-id: comment-migration
+networkPolicy:
+  edgeNamespaceSelector:
+    inspacy.io/edge: "true"
+  edgePodSelector:
+    inspacy.io/network-role: edge
+  monitoringNamespaceSelector:
+    inspacy.io/monitoring: "true"
+  monitoringPodSelector:
+    inspacy.io/network-role: monitoring
+  clusterEgress:
+    - namespaceSelector: { kubernetes.io/metadata.name: observability }
+      podSelector: { app.kubernetes.io/name: opentelemetry-collector }
+      ports: [{ protocol: TCP, port: 4317 }]
+  externalEgress:
+    - cidr: 192.0.2.10/32
+      ports: [{ protocol: TCP, port: 3306 }]
+    - cidr: 192.0.2.11/32
+      ports: [{ protocol: TCP, port: 5671 }]
+    - cidr: 192.0.2.12/32
+      ports: [{ protocol: TCP, port: 443 }]
+  migrationExternalEgress:
+    - cidr: 192.0.2.10/32
+      ports: [{ protocol: TCP, port: 3306 }]
+    - cidr: 192.0.2.12/32
+      ports: [{ protocol: TCP, port: 443 }]

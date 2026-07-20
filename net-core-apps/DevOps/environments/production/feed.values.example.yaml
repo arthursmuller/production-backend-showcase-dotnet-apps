@@ -1,0 +1,55 @@
+service:
+  name: feed
+  image:
+    repository: registry.invalid/inspacy/feed-api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  # The feed-api-runtime secret provider must expose feedConfig/cursor_signing_key as a base64 value
+  # decoding to at least 32 random bytes; never place that key in commonEnv.
+  commonEnv:
+    Feed__EnableFirstPageCache: "true"
+    Following__ServiceUrl: "https://following.internal.example/"
+    AudienceProjection__MaximumBootstrapAgeSeconds: "3600"
+    AudienceProjection__MaximumFriendsOfFriendsCandidates: "256"
+    AudienceProjection__AuthorizationDeadlineMilliseconds: "500"
+    # Privacy work is deliberately smaller than ordinary fan-out. Keep the lease at least twice
+    # the cycle budget and never raise these caps without a MariaDB celebrity-erasure rehearsal.
+    FeedUserErasure__BatchSize: "100"
+    FeedUserErasure__MaximumRowsPerCycle: "800"
+    FeedUserErasure__MaximumBatchesPerCycle: "16"
+    FeedUserErasure__CycleTimeBudgetMilliseconds: "5000"
+    FeedUserErasure__LeaseSeconds: "30"
+    FeedUserErasure__MaximumPendingAgeMinutes: "15"
+    FeedUserErasure__CacheExpirySafetySeconds: "2"
+roles:
+  api:
+    secretName: feed-api-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    env:
+      Cache__Redis__Enabled: "true"
+      Cache__Redis__InstanceName: "inspacy-feed:"
+      Cache__Redis__ConnectTimeoutMilliseconds: "1000"
+      Cache__Redis__OperationTimeoutMilliseconds: "250"
+    autoscaling: { maxReplicas: 100 }
+  consumer:
+    replicas: 3
+    secretName: feed-consumer-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    autoscaling: { minReplicas: 3, maxReplicas: 80 }
+    # This role consumes the restricted feed_privacy_user_erasure queue. Broker policy must
+    # grant it only the privacy restricted exchange/queue permissions required by that binding.
+  job:
+    # feed-job-runtime must be authorized to resolve
+    # identityConfig/feed_relationship_snapshot_client_secret. Do not copy the API client secret.
+    secretName: feed-job-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    # FeedUserErasureJob runs here and must remain enabled during read-surface rollback.
+migration:
+  secretName: feed-migration
+  certificateSecretKey: secret-provider-client.pfx
+
+networkPolicy:
+  # Redis is not part of the base runtime allow-list. Feed uses it only for API
+  # first-page reads; consumers and jobs cannot reach the endpoint.
+  apiExternalEgress:
+    - cidr: 192.0.2.12/32
+      ports: [{ protocol: TCP, port: 6380 }]

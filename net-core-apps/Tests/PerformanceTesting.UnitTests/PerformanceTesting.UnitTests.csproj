@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\PerformanceHelpers\*.cs" Link="Performance\%(Filename)%(Extension)" />
+    <Content Include="profiles.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\PerformanceHelpers\performance-profiles.schema.json"
+             Link="performance-profiles.schema.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\PerformanceHelpers\performance-result.schema.json"
+             Link="performance-result.schema.json" CopyToOutputDirectory="PreserveNewest" />
+
+    <Content Include="..\..\Services\Comment\Comment.Tests\Comment.LoadTests\profiles.json" Link="RepositoryProfiles\Comment\load.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Comment\Comment.Tests\Comment.StressTests\profiles.json" Link="RepositoryProfiles\Comment\stress.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Comment\Comment.Tests\Comment.SoakTests\profiles.json" Link="RepositoryProfiles\Comment\soak.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Feed\Feed.Tests\Feed.LoadTests\profiles.json" Link="RepositoryProfiles\Feed\load.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Feed\Feed.Tests\Feed.StressTests\profiles.json" Link="RepositoryProfiles\Feed\stress.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Feed\Feed.Tests\Feed.SoakTests\profiles.json" Link="RepositoryProfiles\Feed\soak.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Following\Following.Tests\Following.LoadTests\profiles.json" Link="RepositoryProfiles\Following\load.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Following\Following.Tests\Following.StressTests\profiles.json" Link="RepositoryProfiles\Following\stress.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Following\Following.Tests\Following.SoakTests\profiles.json" Link="RepositoryProfiles\Following\soak.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Interaction\Interaction.Tests\Interaction.LoadTests\profiles.json" Link="RepositoryProfiles\Interaction\load.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Interaction\Interaction.Tests\Interaction.StressTests\profiles.json" Link="RepositoryProfiles\Interaction\stress.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Interaction\Interaction.Tests\Interaction.SoakTests\profiles.json" Link="RepositoryProfiles\Interaction\soak.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Moderation\Moderation.Tests\Moderation.LoadTests\profiles.json" Link="RepositoryProfiles\Moderation\load.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Moderation\Moderation.Tests\Moderation.StressTests\profiles.json" Link="RepositoryProfiles\Moderation\stress.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\Services\Moderation\Moderation.Tests\Moderation.SoakTests\profiles.json" Link="RepositoryProfiles\Moderation\soak.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

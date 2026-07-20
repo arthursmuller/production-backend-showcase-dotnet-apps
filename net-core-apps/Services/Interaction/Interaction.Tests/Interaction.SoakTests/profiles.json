@@ -1,0 +1,80 @@
+{
+  "$schema": "performance-profiles.schema.json",
+  "operations": {
+    "engagement": {
+      "path": "/api/resources/comment/performance-fixture/engagement",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "readiness": {
+      "path": "/health/ready",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "observe-view": {
+      "path": "/api/resources/comment/performance-fixture/views",
+      "method": "POST",
+      "requiresAuthentication": true
+    },
+    "set-reaction": {
+      "path": "/api/resources/comment/performance-fixture/reaction",
+      "method": "PUT",
+      "body": "{\"kind\": \"like\"}",
+      "contentType": "application/json",
+      "requiresAuthentication": true
+    }
+  },
+  "profiles": {
+    "smoke": {
+      "enabled": true,
+      "arrivalModel": "periodic-burst",
+      "durationSeconds": 10,
+      "recoverySeconds": 0,
+      "startConcurrency": 1,
+      "concurrency": 1,
+      "targetRps": 1,
+      "requestTimeoutSeconds": 10,
+      "burstEverySeconds": 6,
+      "burstDurationSeconds": 2,
+      "burstMultiplier": 2,
+      "mix": [
+        { "operation": "engagement", "weight": 4 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    },
+    "baseline": {
+      "enabled": false,
+      "arrivalModel": "periodic-burst",
+      "durationSeconds": null,
+      "recoverySeconds": 0,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "burstEverySeconds": 3600,
+      "burstDurationSeconds": 300,
+      "burstMultiplier": 3,
+      "mix": [
+        { "operation": "observe-view", "weight": 10 },
+        { "operation": "set-reaction", "weight": 1 }
+      ]
+    },
+    "representative": {
+      "enabled": false,
+      "arrivalModel": "periodic-burst",
+      "durationSeconds": null,
+      "recoverySeconds": 0,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "burstEverySeconds": 3600,
+      "burstDurationSeconds": 300,
+      "burstMultiplier": 3,
+      "mix": [
+        { "operation": "observe-view", "weight": 10 },
+        { "operation": "set-reaction", "weight": 1 }
+      ]
+    }
+  }
+}

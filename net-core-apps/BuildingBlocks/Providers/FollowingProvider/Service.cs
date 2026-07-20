@@ -1,4 +1,4 @@
-﻿using FollowingProvider.Abstractions;
+using FollowingProvider.Abstractions;
 
 namespace FollowingProvider
 {
@@ -6,6 +6,6 @@ namespace FollowingProvider
     {
         public IFollowingApi Api => _api;
         private readonly IFollowingApi _api;
-        public FollowingService(IFollowingApi api) => (_api) =  (api);
+        public FollowingService(IFollowingApi api) => (_api) = (api);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -7,7 +7,7 @@ namespace RichEnumeration
 {
     public abstract class Enumeration : IComparable
     {
-        public string Name { get; private set; }
+        public string Name { get; private set; } = string.Empty;
 
         public int Id { get; private set; }
 
@@ -24,7 +24,7 @@ namespace RichEnumeration
                      .Select(f => f.GetValue(null))
                      .Cast<T>();
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is not Enumeration otherValue)
             {
@@ -67,6 +67,6 @@ namespace RichEnumeration
             return matchingItem;
         }
 
-        public int CompareTo(object other) => Id.CompareTo(((Enumeration)other).Id);
+        public int CompareTo(object? other) => Id.CompareTo(((Enumeration)other!).Id);
     }
 }

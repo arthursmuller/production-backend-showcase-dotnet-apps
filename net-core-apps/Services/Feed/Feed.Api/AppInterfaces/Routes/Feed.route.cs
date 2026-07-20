@@ -1,14 +1,10 @@
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
-using Feed.API.Features.Feeds;
-using Feed.Application.Dtos;
+using Feed.Application.Features.Feeds;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-
-using StarterEntities;
-
 
 namespace Feed.API.AppInterfaces.Routes
 {
@@ -16,43 +12,51 @@ namespace Feed.API.AppInterfaces.Routes
     {
         public static IEndpointRouteBuilder MapFeedRoutes(this IEndpointRouteBuilder routes)
         {
-            var group = routes.MapGroup("/api/feed/v1").WithTags("Feed");
-
-            group.MapGet("/visibility-level", VisibilityLevels)
-                 .WithName("FeedVisibilityLevels")
-                 .AllowAnonymous()
-                 .Produces<Response<IEnumerable<VisibilityLevel>>>(StatusCodes.Status200OK);
-
-            group.MapGet("/user/auth/list-viewed", ListViewed)
-                 .WithName("FeedListViewed")
-                 .RequireAuthorization()
-                 .Produces<PagedResponse<IEnumerable<UserConnectionsFeedDto>>>(StatusCodes.Status200OK);
-
-            group.MapGet("/user/auth/list-not-viewed", ListNotViewed)
-                 .WithName("FeedListNotViewed")
-                 .RequireAuthorization()
-                 .Produces<PagedResponse<IEnumerable<UserConnectionsFeedDto>>>(StatusCodes.Status200OK);
+            var group = routes.MapGroup("/api/feed").WithTags("Feed");
+            group.MapGet("/user/auth/items", List)
+                .WithName("FeedList")
+                .RequireAuthorization()
+                .Produces<FeedPage>(StatusCodes.Status200OK)
+                .ProducesProblem(StatusCodes.Status400BadRequest)
+                .ProducesProblem(StatusCodes.Status401Unauthorized)
+                .ProducesProblem(StatusCodes.Status403Forbidden)
+                .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+                .ProducesProblem(StatusCodes.Status404NotFound)
+                .ProducesProblem(StatusCodes.Status500InternalServerError);
+            group.MapPost("/user/auth/seen", MarkSeen)
+                .WithName("FeedMarkSeen")
+                .RequireAuthorization()
+                .Accepts<MarkFeedActivitiesSeen>("application/json")
+                .Produces(StatusCodes.Status204NoContent)
+                .ProducesProblem(StatusCodes.Status400BadRequest)
+                .ProducesProblem(StatusCodes.Status401Unauthorized)
+                .ProducesProblem(StatusCodes.Status403Forbidden)
+                .ProducesProblem(StatusCodes.Status404NotFound)
+                .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+                .ProducesProblem(StatusCodes.Status500InternalServerError);
 
             return routes;
         }
 
-        internal static IResult VisibilityLevels()
+        internal static async Task<IResult> List(
+            [FromServices] ListFeedQuery query,
+            CancellationToken cancellationToken,
+            string? cursor = null,
+            int pageSize = 20,
+            bool includeSeen = true)
         {
-            try { return Results.Ok(R.Success(VisibilityLevel.List())); }
-            catch { return Results.Problem("Failed to list visibility levels.", statusCode: 500); }
+            return Results.Ok(await query.Handle(
+                new FeedPageRequest(cursor, pageSize, includeSeen),
+                cancellationToken));
         }
 
-        internal static async Task<IResult> ListViewed([AsParameters] FeedViewedCriteria criteria,
-                                                       [FromServices] ListMyFeedViewedQuery h)
+        internal static async Task<IResult> MarkSeen(
+            [FromBody] MarkFeedActivitiesSeen request,
+            [FromServices] MarkFeedActivitiesSeenCommand command,
+            CancellationToken cancellationToken)
         {
-            try { return Results.Ok(PaginationFactory.CreatePagedReponse(await h.Handle(criteria), criteria.PageNumber, criteria.PageSize)); }
-            catch { return Results.Problem("Failed to list viewed feed items.", statusCode: 500); }
-        }
-
-        internal static async Task<IResult> ListNotViewed([FromServices] ListMyFeedNotViewedQuery h)
-        {
-            try { return Results.Ok(PaginationFactory.CreatePagedReponse(await h.Handle(), null, null)); }
-            catch { return Results.Problem("Failed to list not-viewed feed items.", statusCode: 500); }
+            await command.Handle(request, cancellationToken);
+            return Results.NoContent();
         }
     }
 }

@@ -1,0 +1,22 @@
+{{- if .Values.service.enabled }}
+{{- range $role := list "api" "consumer" "job" }}
+{{- $settings := index $.Values.roles $role }}
+{{- if and $settings.enabled $settings.disruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "inspacy-service.roleName" (dict "root" $ "role" $role) }}
+  labels:
+{{ include "inspacy-service.commonLabels" $ | indent 4 }}
+    inspacy.io/runtime-role: {{ $role }}
+spec:
+  minAvailable: {{ $settings.disruptionBudget.minAvailable }}
+  unhealthyPodEvictionPolicy: AlwaysAllow
+  selector:
+    matchLabels:
+{{ include "inspacy-service.selectorLabels" (dict "root" $ "role" $role) | indent 6 }}
+{{- end }}
+{{- end }}
+{{- end }}
+

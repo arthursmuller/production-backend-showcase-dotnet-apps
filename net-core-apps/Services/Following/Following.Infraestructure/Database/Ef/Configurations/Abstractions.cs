@@ -1,36 +1,54 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Following.Domain.AggregatesModel;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using StarterEntities;
-using System.Linq;
 
 namespace Following.Infra.EntityConfigurations
 {
     public abstract class BaseConfiguration
     {
-        protected string setPropriedadesDeEntidadeBase<T>(EntityTypeBuilder<T> modelBuilder, bool gerarId = true) where T : BaseEntity
+        protected static void ConfigureBase<T>(
+            EntityTypeBuilder<T> builder,
+            string tableName,
+            bool generateId = true)
+            where T : FollowingEntity
         {
-            string entity = modelBuilder.Metadata.Name
-                .Split(".")
-                .Last();
+            builder.ToTable(tableName);
+            builder.HasKey(entity => entity.Id);
 
-            modelBuilder.ToTable(entity);
-            modelBuilder.Property(model => model.UserUpdate).IsUnicode(false).HasMaxLength(10);
-
-            modelBuilder.Property(e => e.CreatedDate)
-                .HasField("_createdDate")
-                .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-            modelBuilder.HasKey(u => u.Id);
-
-            var idProp = modelBuilder.Property(u => u.Id);
-            idProp
+            var id = builder.Property(entity => entity.Id)
                 .HasField("_id")
-                .HasColumnName("Id");
+                .HasColumnName("Id")
+                .IsRequired();
+            if (generateId)
+                id.ValueGeneratedOnAdd();
+            else
+                id.ValueGeneratedNever();
 
-            if (!gerarId)
-                idProp.ValueGeneratedNever();
+            builder.Property(entity => entity.CreatedDate)
+                .HasField("_createdDate")
+                .HasColumnName("CreatedDate")
+                .HasColumnType("datetime(6)")
+                .IsRequired();
 
-            return entity;
+            builder.Property(entity => entity.UpdateDate)
+                .HasColumnName("UpdateDate")
+                .HasColumnType("datetime(6)")
+                .IsRequired();
+
+            builder.Property(entity => entity.UserUpdate)
+                .HasColumnName("UserUpdate")
+                .HasMaxLength(10)
+                .IsUnicode(false)
+                .HasDefaultValue("SISTEMA")
+                .IsRequired();
+
+            builder.Property(entity => entity.Version)
+                .HasColumnName("Version")
+                .HasColumnType("bigint")
+                .HasDefaultValue(1L)
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken()
+                .IsRequired();
         }
     }
 }

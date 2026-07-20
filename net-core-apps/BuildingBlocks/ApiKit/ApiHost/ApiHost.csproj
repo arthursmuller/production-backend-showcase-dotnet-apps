@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>InspacyApiHost</RootNamespace>
     <AssemblyName>InspacyApiHost</AssemblyName>
@@ -13,11 +12,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ApiHost.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ApiExceptionHandler\ApiExceptionHandler.csproj" />
+    <ProjectReference Include="..\ApiResponse\ApiResponse.csproj" />
     <ProjectReference Include="..\..\Brokers\MessageBrokerExtensions\MessageBrokerExtensions.csproj" />
+    <ProjectReference Include="..\..\Operations\RuntimeIdentity\RuntimeIdentity.csproj" />
+    <ProjectReference Include="..\..\Providers\SecretProvider\SecretProvider.csproj" />
     <ProjectReference Include="..\..\SqlKit\EfCoreMigrations\EfCoreMigrations.csproj" />
     <ProjectReference Include="..\..\SqlKit\SqlMigrations\SqlMigrations.csproj" />
 	<ProjectReference Include="..\CommomStartupExtensions\CommomStartupExtensions.csproj" />
 	<ProjectReference Include="..\Cqrs\Cqrs.csproj" />
-	<ProjectReference Include="..\..\Providers\StorageProvider\StorageProvider.csproj" />
   </ItemGroup>
 </Project>

@@ -1,4 +1,4 @@
-﻿
+
 using AuthenticationProvider.Providers.Api;
 
 namespace AuthenticationProvider.Abstractions

@@ -1,0 +1,46 @@
+service:
+  name: interaction
+  image:
+    repository: registry.invalid/inspacy/interaction-api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+roles:
+  api:
+    # interaction-api-runtime must expose AuthoritativeExport__CursorSigningKey
+    # as base64 for at least 32 random bytes. Worker and migration Secrets must omit it.
+    secretName: interaction-api-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    env:
+      Cache__Redis__Enabled: "true"
+      Cache__Redis__InstanceName: "inspacy-interaction:"
+      Cache__Redis__ConnectTimeoutMilliseconds: "1000"
+      Cache__Redis__OperationTimeoutMilliseconds: "250"
+    autoscaling: { maxReplicas: 100 }
+  consumer:
+    replicas: 3
+    secretName: interaction-consumer-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    env:
+      Cache__Redis__Enabled: "true"
+      Cache__Redis__InstanceName: "inspacy-interaction:"
+      Cache__Redis__ConnectTimeoutMilliseconds: "1000"
+      Cache__Redis__OperationTimeoutMilliseconds: "250"
+    autoscaling: { minReplicas: 3, maxReplicas: 60 }
+  job:
+    secretName: interaction-job-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    env:
+      Cache__Redis__Enabled: "true"
+      Cache__Redis__InstanceName: "inspacy-interaction:"
+      Cache__Redis__ConnectTimeoutMilliseconds: "1000"
+      Cache__Redis__OperationTimeoutMilliseconds: "250"
+migration:
+  secretName: interaction-migration
+  certificateSecretKey: secret-provider-client.pfx
+
+networkPolicy:
+  # Redis remains cache-only and is not reachable by migration or other services.
+  apiExternalEgress: &redisEgress
+    - cidr: 192.0.2.12/32
+      ports: [{ protocol: TCP, port: 6380 }]
+  consumerExternalEgress: *redisEgress
+  jobExternalEgress: *redisEgress

@@ -9,11 +9,11 @@ namespace MySqlMigrations;
 /// </summary>
 public interface IDatabaseMigrationService
 {
-    Task Migrate();
-    Task EnsureDatabaseCreated();
-    Task EnsureDatabaseDeleted();
-    Task ApplyPendingMigrations();
-    Task ApplyProcedureMigrations();
+    Task MigrateAsync(CancellationToken cancellationToken);
+    Task EnsureDatabaseCreatedAsync(CancellationToken cancellationToken);
+    Task EnsureDatabaseDeletedAsync(CancellationToken cancellationToken);
+    Task ApplyPendingMigrationsAsync(CancellationToken cancellationToken);
+    Task ApplyProcedureMigrationsAsync(CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -21,6 +21,7 @@ public interface IDatabaseMigrationService
 /// </summary>
 public class DatabaseMigrationService : IDatabaseMigrationService
 {
+    private static readonly TimeSpan RollbackTimeout = TimeSpan.FromSeconds(10);
     private readonly string _connectionString;
     private readonly string _sqlPath;
     private readonly string _dbName;
@@ -33,7 +34,7 @@ public class DatabaseMigrationService : IDatabaseMigrationService
         string sqlPath,
         string dbName,
         ILogger<DatabaseMigrationService> logger,
-        Func<string, string> pathResolver = null)
+        Func<string, string>? pathResolver = null)
     {
         _connectionString = connectionString;
         _sqlPath = sqlPath;
@@ -42,48 +43,53 @@ public class DatabaseMigrationService : IDatabaseMigrationService
         _pathResolver = pathResolver ?? GetDefaultDirectoryPath;
     }
 
-    public async Task Migrate()
+    public async Task MigrateAsync(CancellationToken cancellationToken)
     {
-        await EnsureDatabaseCreated();
-        await ApplyPendingMigrations();
-        await ApplyProcedureMigrations();
+        cancellationToken.ThrowIfCancellationRequested();
+        await EnsureDatabaseCreatedAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        await ApplyPendingMigrationsAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        await ApplyProcedureMigrationsAsync(cancellationToken);
     }
 
     /// <summary>
     /// Ensures the target database exists
     /// </summary>
-    public async Task EnsureDatabaseCreated()
+    public virtual async Task EnsureDatabaseCreatedAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var builder = new MySqlConnectionStringBuilder(_connectionString);
         var databaseName = builder.Database;
         builder.Database = null;
 
-        _logger.LogInformation($"Ensuring database {databaseName} exists");
+        _logger.LogInformation("Ensuring database {DatabaseName} exists", databaseName);
 
-        using var connection = new MySqlConnection(builder.ConnectionString);
-        await connection.OpenAsync();
+        await using var connection = new MySqlConnection(builder.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
 
-        using var command = connection.CreateCommand();
+        await using var command = connection.CreateCommand();
         command.CommandText = $"CREATE DATABASE IF NOT EXISTS `{databaseName}`;";
-        await command.ExecuteNonQueryAsync();
+        await command.ExecuteNonQueryAsync(cancellationToken);
 
-        _logger.LogInformation($"Database {databaseName} created or already exists");
+        _logger.LogInformation("Database {DatabaseName} created or already exists", databaseName);
     }
 
     /// <summary>
     /// Applies any pending migrations that haven't been executed yet
     /// </summary>
-    public async Task ApplyPendingMigrations()
+    public virtual async Task ApplyPendingMigrationsAsync(CancellationToken cancellationToken)
     {
-        using var connection = new MySqlConnection(_connectionString);
-        await connection.OpenAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
 
-        await EnsureMigrationTableExists(connection);
+        await EnsureMigrationTableExistsAsync(connection, cancellationToken);
 
-        var appliedMigrations = await GetAppliedMigrations(connection);
+        var appliedMigrations = await GetAppliedMigrationsAsync(connection, cancellationToken);
 
         var migrationsPath = _pathResolver(_sqlPath + "/Migrations");
-        _logger.LogInformation($"Looking for migrations in: {migrationsPath}");
+        _logger.LogInformation("Looking for migrations in: {MigrationsPath}", migrationsPath);
 
         var migrationFiles = Directory.Exists(migrationsPath)
             ? Directory.GetFiles(migrationsPath, "*.sql")
@@ -94,31 +100,32 @@ public class DatabaseMigrationService : IDatabaseMigrationService
 
         if (migrationFiles.Count == 0)
         {
-            _logger.LogWarning($"No migration files found in {migrationsPath}");
+            _logger.LogWarning("No migration files found in {MigrationsPath}", migrationsPath);
         }
         else
         {
-            _logger.LogInformation($"Found {migrationFiles.Count} migration files");
+            _logger.LogInformation("Found {MigrationCount} migration files", migrationFiles.Count);
         }
 
         foreach (var migrationFile in migrationFiles)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var fileName = Path.GetFileName(migrationFile);
 
             if (!appliedMigrations.Contains(fileName))
             {
-                _logger.LogInformation($"Applying migration: {fileName}");
+                _logger.LogInformation("Applying migration: {MigrationFile}", fileName);
 
-                var sql = await File.ReadAllTextAsync(migrationFile);
+                var sql = await File.ReadAllTextAsync(migrationFile, cancellationToken);
                 sql = ReplaceDatabaseName(sql);
 
-                await ExecuteMigrationScript(connection, sql, fileName);
+                await ExecuteMigrationScriptAsync(connection, sql, fileName, cancellationToken);
 
-                _logger.LogInformation($"Migration {fileName} applied successfully");
+                _logger.LogInformation("Migration {MigrationFile} applied successfully", fileName);
             }
             else
             {
-                _logger.LogInformation($"Migration {fileName} already applied, skipping");
+                _logger.LogInformation("Migration {MigrationFile} already applied, skipping", fileName);
             }
         }
     }
@@ -126,14 +133,15 @@ public class DatabaseMigrationService : IDatabaseMigrationService
     /// <summary>
     /// Applies all procedure migrations (these are always reapplied)
     /// </summary>
-    public async Task ApplyProcedureMigrations()
+    public virtual async Task ApplyProcedureMigrationsAsync(CancellationToken cancellationToken)
     {
-        using var connection = new MySqlConnection(_connectionString);
-        await connection.OpenAsync();
+        cancellationToken.ThrowIfCancellationRequested();
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync(cancellationToken);
 
         // Get procedure files from procedures subdirectory
         var proceduresPath = _pathResolver(_sqlPath + "/Migrations/Procedures");
-        _logger.LogInformation($"Looking for procedures in: {proceduresPath}");
+        _logger.LogInformation("Looking for procedures in: {ProceduresPath}", proceduresPath);
 
         var procedureFiles = new List<string>();
 
@@ -162,29 +170,32 @@ public class DatabaseMigrationService : IDatabaseMigrationService
         }
         else
         {
-            _logger.LogInformation($"Found {procedureFiles.Count} procedure files");
+            _logger.LogInformation("Found {ProcedureCount} procedure files", procedureFiles.Count);
         }
 
         foreach (var procedureFile in procedureFiles)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var fileName = Path.GetFileName(procedureFile);
-            _logger.LogInformation($"Applying procedure: {fileName}");
+            _logger.LogInformation("Applying procedure: {ProcedureFile}", fileName);
 
-            var sql = await File.ReadAllTextAsync(procedureFile);
+            var sql = await File.ReadAllTextAsync(procedureFile, cancellationToken);
             sql = ReplaceDatabaseName(sql);
 
-            await ExecuteProcedureScript(connection, sql);
+            await ExecuteProcedureScriptAsync(connection, sql, cancellationToken);
 
-            _logger.LogInformation($"Procedure {fileName} applied successfully");
+            _logger.LogInformation("Procedure {ProcedureFile} applied successfully", fileName);
         }
     }
 
     /// <summary>
     /// Ensures the migration history table exists
     /// </summary>
-    private async Task EnsureMigrationTableExists(MySqlConnection connection)
+    private async Task EnsureMigrationTableExistsAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
     {
-        using var command = connection.CreateCommand();
+        await using var command = connection.CreateCommand();
         command.CommandText = $@"
             CREATE TABLE IF NOT EXISTS `{_migrationsTableName}` (
                 `MigrationId` VARCHAR(255) NOT NULL,
@@ -192,21 +203,23 @@ public class DatabaseMigrationService : IDatabaseMigrationService
                 PRIMARY KEY (`MigrationId`)
             );";
 
-        await command.ExecuteNonQueryAsync();
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     /// <summary>
     /// Gets a list of all migrations that have been applied
     /// </summary>
-    private async Task<HashSet<string>> GetAppliedMigrations(MySqlConnection connection)
+    private async Task<HashSet<string>> GetAppliedMigrationsAsync(
+        MySqlConnection connection,
+        CancellationToken cancellationToken)
     {
         var appliedMigrations = new HashSet<string>();
 
-        using var command = connection.CreateCommand();
+        await using var command = connection.CreateCommand();
         command.CommandText = $"SELECT `MigrationId` FROM `{_migrationsTableName}`;";
 
-        using var reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
         {
             appliedMigrations.Add(reader.GetString(0));
         }
@@ -217,35 +230,39 @@ public class DatabaseMigrationService : IDatabaseMigrationService
     /// <summary>
     /// Executes a migration script and records it in the migration history
     /// </summary>
-    private async Task ExecuteMigrationScript(MySqlConnection connection, string sql, string migrationId)
+    private async Task ExecuteMigrationScriptAsync(
+        MySqlConnection connection,
+        string sql,
+        string migrationId,
+        CancellationToken cancellationToken)
     {
-        using var transaction = await connection.BeginTransactionAsync();
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
         try
         {
             // Execute the migration script
-            using (var command = connection.CreateCommand())
+            await using (var command = connection.CreateCommand())
             {
                 command.CommandText = sql;
                 command.Transaction = transaction;
-                await command.ExecuteNonQueryAsync();
+                await command.ExecuteNonQueryAsync(cancellationToken);
             }
 
             // Record the migration in history
-            using (var command = connection.CreateCommand())
+            await using (var command = connection.CreateCommand())
             {
                 command.CommandText = $"INSERT INTO `{_migrationsTableName}` (`MigrationId`, `AppliedOn`) VALUES (@id, NOW());";
                 command.Parameters.AddWithValue("@id", migrationId);
                 command.Transaction = transaction;
-                await command.ExecuteNonQueryAsync();
+                await command.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, $"Error applying migration {migrationId}");
+            await TryRollbackAsync(transaction, migrationId);
+            _logger.LogError(ex, "Error applying migration {MigrationId}", migrationId);
             throw;
         }
     }
@@ -253,9 +270,12 @@ public class DatabaseMigrationService : IDatabaseMigrationService
     /// <summary>
     /// Executes a procedure script with appropriate delimiter handling
     /// </summary>
-    private async Task ExecuteProcedureScript(MySqlConnection connection, string sql)
+    private async Task ExecuteProcedureScriptAsync(
+        MySqlConnection connection,
+        string sql,
+        CancellationToken cancellationToken)
     {
-        using var transaction = await connection.BeginTransactionAsync();
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
 
         try
         {
@@ -267,69 +287,99 @@ public class DatabaseMigrationService : IDatabaseMigrationService
 
             foreach (var statement in statements)
             {
-                using var command = connection.CreateCommand();
+                cancellationToken.ThrowIfCancellationRequested();
+                await using var command = connection.CreateCommand();
                 command.CommandText = statement;
                 command.Transaction = transaction;
-                await command.ExecuteNonQueryAsync();
+                await command.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
+            await TryRollbackAsync(transaction, "stored procedures");
             _logger.LogError(ex, "Error applying procedure");
             throw;
         }
     }
 
-    public async Task EnsureDatabaseDeleted()
+    public virtual async Task EnsureDatabaseDeletedAsync(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var builder = new MySqlConnectionStringBuilder(_connectionString);
         var server = builder.Server;
         var port = builder.Port;
         var user = builder.UserID;
         var password = builder.Password;
 
-        _logger.LogInformation($"Ensuring database {_dbName} is deleted by killing connections");
+        _logger.LogInformation(
+            "Ensuring database {DatabaseName} is deleted by killing connections",
+            _dbName);
 
-        using (var connection = new MySqlConnection($"Server={server};Port={port};User ID={user};Password={password};"))
+        await using (var connection = new MySqlConnection($"Server={server};Port={port};User ID={user};Password={password};"))
         {
-            await connection.OpenAsync();
+            await connection.OpenAsync(cancellationToken);
 
             // Kill all active connections to the target database
-            using (var command = connection.CreateCommand())
+            await using (var command = connection.CreateCommand())
             {
-                command.CommandText = $"SELECT GROUP_CONCAT(CONCAT('KILL ', id, ';')) FROM information_schema.processlist WHERE db = '{_dbName}';";
-                var killCommands = await command.ExecuteScalarAsync() as string;
+                command.CommandText = "SELECT GROUP_CONCAT(CONCAT('KILL ', id, ';')) FROM information_schema.processlist WHERE db = @databaseName;";
+                command.Parameters.AddWithValue("@databaseName", _dbName);
+                var killCommands = await command.ExecuteScalarAsync(cancellationToken) as string;
 
                 if (!string.IsNullOrEmpty(killCommands))
                 {
                     var individualKillCommands = killCommands.Split(';', StringSplitOptions.RemoveEmptyEntries);
                     foreach (var killCommand in individualKillCommands)
                     {
-                        using (var killCmd = connection.CreateCommand())
+                        cancellationToken.ThrowIfCancellationRequested();
+                        await using (var killCmd = connection.CreateCommand())
                         {
                             killCmd.CommandText = killCommand.Replace(",", "");
-                            await killCmd.ExecuteNonQueryAsync();
-                            _logger.LogInformation($"Executed: {killCommand}");
+                            await killCmd.ExecuteNonQueryAsync(cancellationToken);
+                            _logger.LogInformation("Executed: {KillCommand}", killCommand);
                         }
                     }
-                    _logger.LogInformation($"Successfully killed all connections to database {_dbName}");
+                    _logger.LogInformation(
+                        "Successfully killed all connections to database {DatabaseName}",
+                        _dbName);
                 }
                 else
                 {
-                    _logger.LogInformation($"No active connections found for database {_dbName}");
+                    _logger.LogInformation(
+                        "No active connections found for database {DatabaseName}",
+                        _dbName);
                 }
             }
 
             // Now attempt to drop the database
-            using (var command = connection.CreateCommand())
+            await using (var command = connection.CreateCommand())
             {
                 command.CommandText = $"DROP DATABASE IF EXISTS `{_dbName}`;";
-                await command.ExecuteNonQueryAsync();
-                _logger.LogInformation($"Database {_dbName} deleted or did not exist");
+                await command.ExecuteNonQueryAsync(cancellationToken);
+                _logger.LogInformation(
+                    "Database {DatabaseName} deleted or did not exist",
+                    _dbName);
             }
+        }
+    }
+
+    private async Task TryRollbackAsync(MySqlTransaction transaction, string operation)
+    {
+        // Rollback must remain possible after the caller's token is cancelled, but it must
+        // never hold shutdown indefinitely. This independent, bounded token is intentional.
+        using var rollbackTimeout = new CancellationTokenSource(RollbackTimeout);
+        try
+        {
+            await transaction.RollbackAsync(rollbackTimeout.Token);
+        }
+        catch (Exception rollbackException)
+        {
+            _logger.LogWarning(
+                rollbackException,
+                "Rollback for {MigrationOperation} did not complete within the cleanup boundary",
+                operation);
         }
     }
     /// <summary>
@@ -341,7 +391,7 @@ public class DatabaseMigrationService : IDatabaseMigrationService
         var createDbMatch = Regex.Match(sql, @"CREATE\s+DATABASE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`'""]?(\w+)[`'""]?", RegexOptions.IgnoreCase);
         var useDbMatch = Regex.Match(sql, @"USE\s+[`'""]?(\w+)[`'""]?", RegexOptions.IgnoreCase);
 
-        string originalDbName = null;
+        string? originalDbName = null;
 
         if (createDbMatch.Success)
         {

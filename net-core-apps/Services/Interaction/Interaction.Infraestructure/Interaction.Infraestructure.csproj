@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" PrivateAssets="all" />
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" />
+    <PackageReference Include="MySqlConnector" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Caching\HybridCache\HybridCache.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SqlKit\MariaDbConfiguration\MariaDbConfiguration.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerContracts\MessageBrokerContracts.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerExtensions\MessageBrokerExtensions.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Operations\RuntimeIdentity\RuntimeIdentity.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\IdentityProvider\IdentityProvider.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Security\SecurityPrimitives\SecurityPrimitives.csproj" />
+    <ProjectReference Include="..\Interaction.Application\Interaction.Application.csproj" />
+    <ProjectReference Include="..\Interaction.Domain\Interaction.Domain.csproj" />
+  </ItemGroup>
+</Project>

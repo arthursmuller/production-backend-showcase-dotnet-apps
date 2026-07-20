@@ -6,8 +6,9 @@ namespace MySqlMigrations;
 /// Implementers expose two well-known <c>public const string</c> fields that
 /// the host uses to locate and apply raw-SQL migrations at startup:
 /// <list type="bullet">
-///   <item><c>ConnectionStringName</c> – environment variable / configuration key
-///         holding the target connection string.</item>
+///   <item><c>ConnectionStringName</c> – an <c>IConfiguration</c> key holding the
+///         target connection string. Environment overrides are consumed by the normal
+///         configuration provider rather than read directly.</item>
 ///   <item><c>MigrationsPath</c> – relative path (under the running app's working
 ///         directory) where the <c>Migrations/*.sql</c> files live.</item>
 /// </list>
@@ -16,7 +17,7 @@ namespace MySqlMigrations;
 /// <code>
 /// public class ServiceMigrations : IMigrationsConfiguration
 /// {
-///     public const string ConnectionStringName = "SQL_CONNECTION_STRING";
+///     public const string ConnectionStringName = "Database:MariaDbSqlConnection";
 ///     public const string MigrationsPath        = "MyService.Infraestructure/Database/Sql";
 /// }
 /// </code>

@@ -1,0 +1,64 @@
+{
+  "$schema": "performance-profiles.schema.json",
+  "operations": {
+    "liveness": {
+      "path": "/health/live",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "readiness": {
+      "path": "/health/ready",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "feed-items": {
+      "path": "/api/feed/user/auth/items?pageSize=20&includeSeen=true",
+      "method": "GET",
+      "requiresAuthentication": true
+    }
+  },
+  "profiles": {
+    "smoke": {
+      "enabled": true,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": 6,
+      "recoverySeconds": 3,
+      "startConcurrency": 1,
+      "concurrency": 2,
+      "targetRps": 2,
+      "requestTimeoutSeconds": 10,
+      "mix": [
+        { "operation": "liveness", "weight": 1 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    },
+    "baseline": {
+      "enabled": false,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": null,
+      "recoverySeconds": null,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "feed-items", "weight": 30 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    },
+    "representative": {
+      "enabled": false,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": null,
+      "recoverySeconds": null,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "feed-items", "weight": 30 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    }
+  }
+}

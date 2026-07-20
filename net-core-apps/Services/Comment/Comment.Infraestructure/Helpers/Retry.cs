@@ -9,7 +9,8 @@ namespace Comment.Infra.Helpers
     {
         public static readonly AsyncRetryPolicy DbConcurrency = Policy
             .Handle<DbUpdateConcurrencyException>()
-            .WaitAndRetryAsync(50, retryAttempt =>
-                TimeSpan.FromMilliseconds(TimeSpan.FromSeconds(2).TotalMilliseconds * Math.Pow(2, retryAttempt - 1)));
+            .WaitAndRetryAsync(3, retryAttempt =>
+                TimeSpan.FromMilliseconds(
+                    (25 * Math.Pow(2, retryAttempt - 1)) + Random.Shared.Next(0, 25)));
     }
 }

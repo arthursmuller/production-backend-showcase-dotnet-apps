@@ -13,7 +13,7 @@ namespace Following.Infra.Migrations
 {
     [DbContext(typeof(FollowingContext))]
     [Migration("20260527011917_first")]
-    partial class first
+    partial class First
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

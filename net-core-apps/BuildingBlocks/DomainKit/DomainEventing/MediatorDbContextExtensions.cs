@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,10 @@ namespace DomainEventing
         /// Call this method right before <c>base.SaveChangesAsync()</c> inside a
         /// custom <c>SaveEntitiesAsync</c> override on your DbContext.
         /// </summary>
-        public static async Task DispatchDomainEventsAsync(this IMediator mediator, DbContext context)
+        public static async Task DispatchDomainEventsAsync(
+            this IMediator mediator,
+            DbContext context,
+            CancellationToken cancellationToken)
         {
             var domainEntities = context.ChangeTracker
                 .Entries<IHasDomainEvents>()
@@ -37,7 +41,7 @@ namespace DomainEventing
             domainEntities.ForEach(entry => entry.Entity.ClearEvents());
 
             foreach (var @event in allEvents)
-                await mediator.Publish(@event);
+                await mediator.Publish(@event, cancellationToken);
         }
     }
 }

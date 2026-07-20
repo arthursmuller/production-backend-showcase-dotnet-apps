@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\BuildingBlocks\Brokers\MessageBrokerContracts\MessageBrokerContracts.csproj" />
+    <ProjectReference Include="..\..\..\..\BuildingBlocks\Brokers\MessageBrokerExtensions\MessageBrokerExtensions.csproj" />
+    <ProjectReference Include="..\..\Feed.Application\Feed.Application.csproj" />
+    <ProjectReference Include="..\..\Feed.Domain\Feed.Domain.csproj" />
+    <ProjectReference Include="..\..\Feed.Infraestructure\Feed.Infraestructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Feed.Api\AppInterfaces\Queues\EngagementSummaryChangedConsumer.cs"
+             Link="Transport\EngagementSummaryChangedConsumer.cs" />
+    <Compile Include="..\..\Feed.Api\AppInterfaces\Queues\ModerationDecisionConsumers.cs"
+             Link="Transport\ModerationDecisionConsumers.cs" />
+  </ItemGroup>
+</Project>

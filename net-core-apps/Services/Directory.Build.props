@@ -1,0 +1,15 @@
+<Project>
+  <Import Project="../Directory.Build.props" />
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Comment.Api' Or '$(MSBuildProjectName)' == 'Feed.Api' Or '$(MSBuildProjectName)' == 'Following.Api'">
+    <Using Include="InspacyApiHost" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Following.Api'">
+    <Using Include="AuthUtils" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Comment.Application' Or '$(MSBuildProjectName)' == 'Feed.Application' Or '$(MSBuildProjectName)' == 'Following.Application'">
+    <Using Include="IdentityProvider" />
+  </ItemGroup>
+</Project>

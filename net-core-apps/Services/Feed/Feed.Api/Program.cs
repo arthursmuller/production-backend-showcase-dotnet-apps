@@ -1,10 +1,4 @@
-using InspacyApiHost;
-
-ApiBuilder.New(new ApiOptions
+await ApiBuilder.NewAsync(new ApiOptions
 {
     AppName = "Feed",
-    WithApplication = true,
-    WithInfra = true,
-    WithCqrs = new (),
-    WithQueues = MessageBrokers.RabbitMQ,
 });

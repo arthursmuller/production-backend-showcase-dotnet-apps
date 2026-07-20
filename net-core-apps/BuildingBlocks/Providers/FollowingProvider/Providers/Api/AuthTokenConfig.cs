@@ -1,4 +1,4 @@
-﻿namespace FollowingProvider.Providers.Api
+namespace FollowingProvider.Providers.Api
 {
     public class ClientCredentialTokenConfig
     {

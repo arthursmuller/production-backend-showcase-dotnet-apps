@@ -1,0 +1,66 @@
+{
+  "$schema": "performance-profiles.schema.json",
+  "operations": {
+    "public-comments": {
+      "path": "/api/comments/list?PageSize=20",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "readiness": {
+      "path": "/health/ready",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "create-comment": {
+      "path": "/api/comments",
+      "method": "POST",
+      "body": "--perf-boundary\r\nContent-Disposition: form-data; name=\"Description\"\r\n\r\nperformance-{runId}-{sequence}\r\n--perf-boundary\r\nContent-Disposition: form-data; name=\"TargetId\"\r\n\r\nperformance-fixture\r\n--perf-boundary\r\nContent-Disposition: form-data; name=\"TargetType\"\r\n\r\npost\r\n--perf-boundary\r\nContent-Disposition: form-data; name=\"VisibilityLevelId\"\r\n\r\n1\r\n--perf-boundary--\r\n",
+      "contentType": "multipart/form-data; boundary=perf-boundary",
+      "requiresAuthentication": true
+    }
+  },
+  "profiles": {
+    "smoke": {
+      "enabled": true,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": 6,
+      "recoverySeconds": 3,
+      "startConcurrency": 1,
+      "concurrency": 2,
+      "targetRps": 2,
+      "requestTimeoutSeconds": 10,
+      "mix": [
+        { "operation": "public-comments", "weight": 4 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    },
+    "baseline": {
+      "enabled": false,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": null,
+      "recoverySeconds": null,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "public-comments", "weight": 20 },
+        { "operation": "create-comment", "weight": 3 }
+      ]
+    },
+    "representative": {
+      "enabled": false,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": null,
+      "recoverySeconds": null,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "public-comments", "weight": 20 },
+        { "operation": "create-comment", "weight": 3 }
+      ]
+    }
+  }
+}

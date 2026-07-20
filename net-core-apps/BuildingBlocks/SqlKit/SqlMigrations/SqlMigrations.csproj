@@ -4,6 +4,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<WarningsAsErrors>$(WarningsAsErrors);CA2016</WarningsAsErrors>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -11,7 +12,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="MySqlConnector" Version="2.4.0" />
+		<PackageReference Include="MySqlConnector" />
 	</ItemGroup>
 
 </Project>

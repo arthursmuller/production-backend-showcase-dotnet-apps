@@ -1,4 +1,3 @@
-﻿using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StorageProvider.Providers.Minio;
@@ -10,10 +9,10 @@ public static class StorageProviderExtensions
 {
     public static IServiceCollection ConfigureStorageProvider(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration? configuration = null)
     {
-        var ociConfig = OciStorageProviderExtensions.BuildOptions();
-        var minioConfig = MinioStorageProviderExtensions.BuildOptions();
+        var ociConfig = OciStorageProviderExtensions.BuildOptions(configuration);
+        var minioConfig = MinioStorageProviderExtensions.BuildOptions(configuration);
 
         if (ociConfig is { Enabled: true })
         {
@@ -26,7 +25,8 @@ public static class StorageProviderExtensions
         else
         {
             throw new InvalidOperationException(
-                "No storage backend enabled. Set MINIO_CONNECTION (local dev) or OCI_CONNECTION (production) with \"enabled\":true.");
+                "No storage backend enabled. Set Storage:Minio (local development) " +
+                "or Storage:OciConnection (production) with \"enabled\":true.");
         }
 
         services.AddScoped<IStorageProviderService, StorageProviderService>();

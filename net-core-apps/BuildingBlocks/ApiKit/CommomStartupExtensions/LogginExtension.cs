@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CommomStartupExtensions
 {
@@ -11,15 +14,8 @@ namespace CommomStartupExtensions
         public static WebApplicationBuilder ConfigureLogger(this WebApplicationBuilder builder,
                                                                             string appName)
         {
-            builder.Host.UseSerilog((context, services, configuration) => {
-                var connectionString = getSetting("SQL_CONNECTION_STRING");
-
-                if (string.IsNullOrEmpty(connectionString))
-                {
-                    Console.WriteLine("Warning: SQL_CONNECTION_STRING is not set. MySQL sink will not be configured.");
-                    Log.Warning("SQL_CONNECTION_STRING is not set. MySQL sink will not be configured."); // Use Serilog's static Log instance for early logging
-                }
-
+            builder.Host.UseSerilog((context, services, configuration) =>
+            {
                 configuration
                     .MinimumLevel.Information()
                     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
@@ -27,34 +23,23 @@ namespace CommomStartupExtensions
                     .Enrich.WithProperty("ApplicationContext", appName)
                     .Enrich.FromLogContext()
                     .WriteTo.Console();
-
-                if (!string.IsNullOrEmpty(connectionString))
-                {
-                    configuration.WriteTo.MySQL(
-                        connectionString: connectionString,
-                        tableName: "Logs",
-                        restrictedToMinimumLevel: LogEventLevel.Error
-                    );
-                }
-            });
-
-            builder.Services.AddTransient<Microsoft.Extensions.Logging.ILogger>(p =>
-            {
-                var loggerFactory = p.GetRequiredService<ILoggerFactory>();
-                // You could also use the HttpContext to make the name dynamic for example
-                return loggerFactory.CreateLogger("Http Controller Logger");
             });
 
             return builder;
         }
-
-
-        public static WebApplication RunWithTryCatch(this WebApplication app, string appName)
+        public static async Task<WebApplication> RunWithTryCatchAsync(
+            this WebApplication app,
+            string appName,
+            CancellationToken cancellationToken)
         {
             try
             {
                 Log.Information("Starting web host ({ApplicationContext})", appName);
-                app.Run();
+                await app.RunAsync(cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Log.Information("Web host shutdown requested ({ApplicationContext})", appName);
             }
             catch (Exception ex)
             {
@@ -62,12 +47,11 @@ namespace CommomStartupExtensions
             }
             finally
             {
-                Log.CloseAndFlush();
+                await Log.CloseAndFlushAsync();
             }
 
             return app;
         }
 
-        private static string getSetting(string setting) => Environment.GetEnvironmentVariable(setting);
     }
 }

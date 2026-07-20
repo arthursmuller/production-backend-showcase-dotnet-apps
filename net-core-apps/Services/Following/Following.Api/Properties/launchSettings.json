@@ -4,15 +4,7 @@
       "commandName": "Project",
       "launchUrl": "api/healthcheck",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "SQL_CONNECTION_STRING": "Data Source=127.0.0.1;port=3306;Database=Inspacy.Following;uid=root;password=a608e2b2Q!",
-        "RMQ_CONNECTION": "{\"username\":\"arthur\",\"pw\":\"a608e2b2\",\"port\":5672,\"host\":\"127.0.0.1\",\"vhost\":\"inspacy\",\"exchange\":\"following.events\",\"delayExchange\":\"inspacy.delayed\",\"retrycount\":6}",
-        "CATEGORIES_SERVICE_URL": "http://localhost:56851/",
-        "IDENTITY_SERVICE_URL": "http://localhost:5000/",
-        "IDENTITY_SERVICE_CLIENT_ID": "following_api",
-        "IDENTITY_SERVICE_CLIENT_SECRET": "75139217L0-C9MS-21OW-K8B0-895417E6OPT21110",
-        "IDENTITY_SERVICE_CLIENT_READ_SCOPE": "following_api:read",
-        "IDENTITY_SERVICE_CLIENT_CATEGORIES_READ_SCOPE": "categories_api:read"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "applicationUrl": "https://localhost:5017;http://localhost:5016"
     }

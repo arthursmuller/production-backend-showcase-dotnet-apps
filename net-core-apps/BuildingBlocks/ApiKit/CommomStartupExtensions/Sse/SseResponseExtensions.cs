@@ -1,11 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Net.ServerSentEvents;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 
 namespace CommomStartupExtensions.Sse
 {
@@ -18,31 +17,28 @@ namespace CommomStartupExtensions.Sse
     /// cancelled. Framing/flushing/Content-Type/Cache-Control is handled by
     /// the .NET 10 native SSE writer
     /// (<see cref="TypedResults.ServerSentEvents{T}(IAsyncEnumerable{SseItem{T}}, string?)"/>),
-    /// replacing the legacy hand-rolled <c>WriteSseStream</c> helper.
+    /// shared by every server-sent event endpoint.
     /// </summary>
     public static class SseResponseExtensions
     {
         /// <summary>
-        /// Registers <see cref="ISseHub"/> backed by <see cref="RabbitMqSseHub"/>
-        /// so SSE events fan out across every API replica via a fanout exchange
-        /// (per-pod exclusive auto-delete queue). Required for multi-replica
-        /// Kubernetes deployments.
+        /// Registers the bounded <see cref="LocalSseHub"/> singleton.
         ///
-        /// <para>The same singleton instance is exposed both as <see cref="ISseHub"/>
-        /// and as an <see cref="IHostedService"/> so the broker consumer is
-        /// started exactly once at boot, against the same instance that
-        /// services resolve for publishing.</para>
+        /// <para>Delivery is per-replica, ephemeral, and best-effort. A publish
+        /// reaches only matching connections held by the current process;
+        /// events are not persisted or replayed. Slow subscribers retain the
+        /// newest bounded window and drop their oldest queued event.</para>
         ///
-        /// <para>The caller is responsible for registering
-        /// <c>IRabbitMQPersistentConnection</c> beforehand (typically via
-        /// <c>RMQConfigureConnection</c>).</para>
+        /// <para>Clients must fetch authoritative state when the synthetic
+        /// <c>connect</c> event is received on every initial connection or
+        /// reconnection. Cross-replica real-time delivery belongs in a
+        /// dedicated gateway/backplane, not this shared HTTP helper.</para>
         ///
         /// </summary>
         public static IServiceCollection AddSseHub(this IServiceCollection services)
         {
-            services.TryAddSingleton<RabbitMqSseHub>();
-            services.TryAddSingleton<ISseHub>(sp => sp.GetRequiredService<RabbitMqSseHub>());
-            services.AddHostedService(sp => sp.GetRequiredService<RabbitMqSseHub>());
+            services.TryAddSingleton<LocalSseHub>();
+            services.TryAddSingleton<ISseHub>(sp => sp.GetRequiredService<LocalSseHub>());
             return services;
         }
 
@@ -72,8 +68,8 @@ namespace CommomStartupExtensions.Sse
         {
             using var sub = hub.Subscribe(channel, userId, ct);
 
-            // Initial "connect" event lets the client onConnect callback fire
-            // immediately so it can pull any state missed while disconnected.
+            // This is a resynchronization signal, not a replay boundary. The
+            // client must pull authoritative state missed while disconnected.
             yield return new SseItem<string>("connected", eventType: "connect");
 
             await foreach (var payload in sub.Reader(ct).WithCancellation(ct))

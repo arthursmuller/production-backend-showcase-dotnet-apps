@@ -1,0 +1,353 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus data source containing normalized Inspacy OTLP metrics and recording rules.",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Engineering operations baseline. Empty provider panels are explicit integration gates, not proof of health.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "1h fast-burn target is 14.4x; 6h slow-burn target is 2x. The numerator uses the exact bounded load-shed, server-timeout, dependency-unavailable, and server-error outcomes.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "budget burn", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 8, "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } },
+          "min": 0,
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 2 }, { "color": "red", "value": 14.4 } ] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:slo_burn_rate:ratio1h{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} 1h", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "inspacy:slo_burn_rate:ratio6h{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} 6h", "range": true, "refId": "B" }
+      ],
+      "title": "SLO error-budget burn",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Ingress latency from the OpenTelemetry ASP.NET Core histogram. Engineering targets are shown as dashed series.",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "linear", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0, "unit": "s" },
+        "overrides": [ { "matcher": { "id": "byRegexp", "options": "/target/" }, "properties": [ { "id": "custom.lineStyle", "value": { "dash": [10, 10], "fill": "dash" } }, { "id": "custom.lineWidth", "value": 1 } ] } ]
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:http_server_latency_seconds:p95_5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} p95", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "inspacy:http_server_latency_seconds:p99_5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} p99", "range": true, "refId": "B" },
+        { "editorMode": "code", "expr": "inspacy:slo_http_p95_target_seconds{service_name=~\"$service\"}", "legendFormat": "{{service_name}} p95 target", "range": true, "refId": "C" }
+      ],
+      "title": "HTTP p95 / p99 latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Exact 5m eligible-error ratio and total request rate. Client quota, auth, validation, business, and caller-cancellation outcomes are queryable but excluded from availability.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 8, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0 }, "overrides": [ { "matcher": { "id": "byRegexp", "options": "/error/" }, "properties": [ { "id": "unit", "value": "percentunit" }, { "id": "custom.axisPlacement", "value": "left" } ] }, { "matcher": { "id": "byRegexp", "options": "/requests/" }, "properties": [ { "id": "unit", "value": "reqps" }, { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:http_server_error_ratio:ratio5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} error ratio", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "inspacy:http_server_requests:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} requests/s", "range": true, "refId": "B" }
+      ],
+      "title": "HTTP errors and traffic",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Exact client-abort and eligible server-deadline outcomes from the bounded request classifier.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0, "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
+      "id": 4,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [ { "editorMode": "code", "expr": "sum by (service_name, http_request_outcome) (rate(inspacy_http_server_request_outcomes_total{deployment_environment_name=~\"$environment\",service_name=~\"$service\",http_request_outcome=~\"client_cancelled|server_timeout\"}[5m]))", "legendFormat": "{{service_name}} {{http_request_outcome}}", "range": true, "refId": "A" } ],
+      "title": "HTTP cancellations and deadlines/s",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Cache hit ratio and p95 operation duration. Cache keys are never labels.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 8, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0 }, "overrides": [ { "matcher": { "id": "byRegexp", "options": "/hit ratio/" }, "properties": [ { "id": "unit", "value": "percentunit" }, { "id": "max", "value": 1 } ] }, { "matcher": { "id": "byRegexp", "options": "/p95/" }, "properties": [ { "id": "unit", "value": "ms" }, { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+      "gridPos": { "h": 8, "w": 9, "x": 6, "y": 8 },
+      "id": 5,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:cache_hit_ratio:ratio5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} hit ratio", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "max by (service_name) (inspacy:cache_operation_latency_milliseconds:p95_5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"})", "legendFormat": "{{service_name}} p95", "range": true, "refId": "B" }
+      ],
+      "title": "Cache effectiveness and latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Source rejection protects MariaDB during cache-zero operation; persistent rejection pages after ten minutes.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 12, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0 }, "overrides": [ { "matcher": { "id": "byRegexp", "options": "/error ratio/" }, "properties": [ { "id": "unit", "value": "percentunit" } ] }, { "matcher": { "id": "byRegexp", "options": "/rejections/" }, "properties": [ { "id": "unit", "value": "reqps" }, { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 8 },
+      "id": 6,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:cache_error_ratio:ratio5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} error ratio", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "inspacy:cache_source_rejections:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} rejections/s", "range": true, "refId": "B" }
+      ],
+      "title": "Cache failures and source rejection",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Fault and retry rates by bounded destination. Broker queue age/depth is a separate provider integration gate.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 8, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0, "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "id": 7,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:masstransit_consume_errors:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} {{messaging_masstransit_destination}} faults/s", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "inspacy:masstransit_consume_retries:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} {{messaging_masstransit_destination}} retries/s", "range": true, "refId": "B" }
+      ],
+      "title": "MassTransit consume faults and retries",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Any non-zero send/delivery fault pages; correlate it with the transactional backlog panel.",
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-GrYlRd" }, "mappings": [], "min": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 0.000001 } ] }, "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 7, "x": 8, "y": 16 },
+      "id": 8,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showPercentChange": false, "textMode": "auto", "wideLayout": true },
+      "targets": [ { "editorMode": "code", "expr": "inspacy:masstransit_outbox_faults:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}}", "range": true, "refId": "A" } ],
+      "title": "MassTransit outbox faults/s",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Diagnostic only: MassTransit 8.5.10 uses Counter<long> with +/- updates for active work. No alert depends on this panel until collector semantics are proven.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0, "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 9, "x": 15, "y": 16 },
+      "id": 9,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [ { "editorMode": "code", "expr": "inspacy:masstransit_active_work:raw{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} {{messaging_masstransit_destination}}", "range": true, "refId": "A" } ],
+      "title": "MassTransit active work (diagnostic raw)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Quarantine/conflict rates from Feed's authoritative audience projection. Any block fault is authorization-sensitive and pages.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0, "unit": "eps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "id": 11,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [ { "editorMode": "code", "expr": "inspacy:feed_audience_projection_faults:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{relationship_kind}} {{projection_outcome}}", "range": true, "refId": "A" } ],
+      "title": "Feed audience projection faults",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Feed fault/capacity outcomes plus source-to-committed activity/audience projection and final visibility-revocation p95 latency. Exact 60s/5s breach counters page separately.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0, "unit": "eps" }, "overrides": [ { "matcher": { "id": "byRegexp", "options": "/p95/" }, "properties": [ { "id": "unit", "value": "s" }, { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "id": 12,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:feed_fault_outcomes:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{operation}} {{outcome}} {{mode}}", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "sum(rate(inspacy_feed_outcomes_total{deployment_environment_name=~\"$environment\",service_name=~\"$service\",operation=\"pull_publishers\",outcome=\"capped\"}[5m]))", "legendFormat": "pull publishers capped/s", "range": true, "refId": "B" },
+        { "editorMode": "code", "expr": "inspacy:feed_activity_projection_convergence_seconds:p95_5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "activity convergence p95", "range": true, "refId": "C" },
+        { "editorMode": "code", "expr": "inspacy:feed_audience_projection_convergence_seconds:p95_5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "audience {{projection_source}} convergence p95", "range": true, "refId": "D" },
+        { "editorMode": "code", "expr": "inspacy:feed_revocation_completion_seconds:p95_5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{revocation_kind}} revocation p95", "range": true, "refId": "E" }
+      ],
+      "title": "Feed faults, convergence, and revocation",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Interaction source-version gaps, bounded ingestion outcomes, authoritative counter drift, and unresolved aggregate count/age. No resource identifiers are labels.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0, "unit": "eps" }, "overrides": [ { "matcher": { "id": "byRegexp", "options": "/unresolved/" }, "properties": [ { "id": "unit", "value": "short" } ] }, { "matcher": { "id": "byRegexp", "options": "/age/" }, "properties": [ { "id": "unit", "value": "s" }, { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "id": 13,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:interaction_projection_gaps:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "Interaction {{projection}} gaps/s", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "inspacy:interaction_projection_gap_unresolved:max{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "unresolved gaps", "range": true, "refId": "C" },
+        { "editorMode": "code", "expr": "inspacy:interaction_projection_gap_oldest_age_seconds:max{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "oldest gap age", "range": true, "refId": "D" },
+        { "editorMode": "code", "expr": "inspacy:interaction_ingestion_outcomes:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{ingestion_kind}} {{ingestion_outcome}}/s", "range": true, "refId": "E" },
+        { "editorMode": "code", "expr": "inspacy:interaction_reconciliation_drift_observations:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{counter}} drifted/s", "range": true, "refId": "F" },
+        { "editorMode": "code", "expr": "inspacy:interaction_reconciliation_absolute_drift:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{counter}} absolute drift/s", "range": true, "refId": "G" }
+      ],
+      "title": "Interaction projection health",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Aggregate-only Trust & Safety metrics: intake, bounded workflow/version rejections, application-boundary cancellations, active/overdue SLA, and first-response latency. Case/report/evidence identifiers are forbidden labels.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0 }, "overrides": [ { "matcher": { "id": "byRegexp", "options": "/intake p95/" }, "properties": [ { "id": "unit", "value": "ms" }, { "id": "custom.axisPlacement", "value": "right" } ] }, { "matcher": { "id": "byRegexp", "options": "/first response|overdue age/" }, "properties": [ { "id": "unit", "value": "s" }, { "id": "custom.axisPlacement", "value": "right" } ] }, { "matcher": { "id": "byRegexp", "options": "/s$/" }, "properties": [ { "id": "unit", "value": "eps" } ] }, { "matcher": { "id": "byRegexp", "options": "/cases/" }, "properties": [ { "id": "unit", "value": "short" } ] } ] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "id": 14,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "sum(rate(moderation_reports_received_total{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}[5m]))", "legendFormat": "reports/s", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "sum(rate(moderation_cases_escalated_total{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}[5m]))", "legendFormat": "SLA escalations/s", "range": true, "refId": "B" },
+        { "editorMode": "code", "expr": "sum(rate(moderation_decisions_total{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}[5m]))", "legendFormat": "decisions/s", "range": true, "refId": "C" },
+        { "editorMode": "code", "expr": "inspacy:moderation_operation_latency_milliseconds:p95_5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "report intake p95", "range": true, "refId": "D" },
+        { "editorMode": "code", "expr": "inspacy:moderation_first_response_seconds:p95_1h{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "first response p95", "range": true, "refId": "E" },
+        { "editorMode": "code", "expr": "inspacy:moderation_sla_active:max{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "active cases", "range": true, "refId": "F" },
+        { "editorMode": "code", "expr": "inspacy:moderation_sla_overdue:max{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "overdue cases", "range": true, "refId": "G" },
+        { "editorMode": "code", "expr": "inspacy:moderation_sla_oldest_overdue_age_seconds:max{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "oldest overdue age", "range": true, "refId": "H" },
+        { "editorMode": "code", "expr": "inspacy:moderation_workflow_rejections:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{reason}} rejections/s", "range": true, "refId": "I" },
+        { "editorMode": "code", "expr": "inspacy:moderation_boundary_cancellations:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{boundary}} cancellations/s", "range": true, "refId": "J" }
+      ],
+      "title": "Moderation intake, workflow, and SLA",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Service-owned aggregate-only EF bus-outbox metrics. Duplicate process replicas are collapsed per store. Oldest age above 30s and a failed sample both page.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0, "unit": "short" }, "overrides": [ { "matcher": { "id": "byRegexp", "options": "/age/" }, "properties": [ { "id": "unit", "value": "s" }, { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 40 },
+      "id": 15,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:masstransit_outbox_pending:sum{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} pending", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "inspacy:masstransit_outbox_oldest_age_seconds:max{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} oldest age", "range": true, "refId": "B" },
+        { "editorMode": "code", "expr": "inspacy:masstransit_outbox_sample_success:min{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{service_name}} sample success", "range": true, "refId": "C" }
+      ],
+      "title": "Transactional outbox depth and oldest age",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "Safe application-side MariaDB signals. Operations and typed failure kinds use fixed vocabularies; statements, parameters, resource names, identifiers, connection data, and exception details are never exported.",
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisCenteredZero": false, "axisColorMode": "text", "axisPlacement": "auto", "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": false, "stacking": { "group": "A", "mode": "none" } }, "min": 0 }, "overrides": [ { "matcher": { "id": "byRegexp", "options": "/p95/" }, "properties": [ { "id": "unit", "value": "ms" }, { "id": "custom.axisPlacement", "value": "right" } ] }, { "matcher": { "id": "byRegexp", "options": "/ratio/" }, "properties": [ { "id": "unit", "value": "percentunit" } ] }, { "matcher": { "id": "byRegexp", "options": "/s$/" }, "properties": [ { "id": "unit", "value": "ops" } ] } ] },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 40 },
+      "id": 16,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "editorMode": "code", "expr": "inspacy:mariadb_command_latency_milliseconds:p95_5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{db_operation_name}} p95", "range": true, "refId": "A" },
+        { "editorMode": "code", "expr": "inspacy:mariadb_slow_command_ratio:ratio5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "slow ratio", "range": true, "refId": "B" },
+        { "editorMode": "code", "expr": "sum without (db_operation_name) (inspacy:mariadb_failed_commands:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"})", "legendFormat": "failures/s", "range": true, "refId": "C" },
+        { "editorMode": "code", "expr": "inspacy:mariadb_failed_commands_by_kind:rate5m{deployment_environment_name=~\"$environment\",service_name=~\"$service\"}", "legendFormat": "{{inspacy_db_command_failure_kind}}/s", "range": true, "refId": "D" }
+      ],
+      "title": "MariaDB command latency, slow ratio, and failures",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+      "description": "No hypothetical RabbitMQ provider metric names are queried.",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 47 },
+      "id": 18,
+      "options": {
+        "code": { "language": "plaintext", "showLineNumbers": false, "showMiniMap": false },
+        "content": "### RELEASE GATE — RabbitMQ provider telemetry\n\nMissing: queue depth/oldest age, unroutable/error queues, and node memory/disk/quorum alarms. Application-owned EF bus-outbox depth/age is implemented above; this gate covers the broker itself.\n\nAcceptance: provider collector with owned queue labels; healthy queue age <30s; RabbitMQ disk <60%; recovery drain >=150% ingress. Owner: Messaging Platform/SRE.",
+        "mode": "markdown"
+      },
+      "title": "INTEGRATION GATE — RabbitMQ telemetry",
+      "type": "text"
+    },
+    {
+      "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+      "description": "Runbook links are repository-relative until deployment rewrites them to immutable HTTPS URLs.",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 54 },
+      "id": 17,
+      "options": {
+        "code": { "language": "plaintext", "showLineNumbers": false, "showMiniMap": false },
+        "content": "### Operator links and evidence boundary\n\n- Cache, RabbitMQ, provider, or telemetry failure: `../README.md#dependency-degradation`\n- Projection quarantine/gap/replay: `../README.md#projection-rebuild-and-message-replay`\n- MariaDB restore/failover: `../README.md#backup-restore-and-failover`\n- Normalization, cardinality, missing signals, and acceptance: `DevOps/observability/README.md`\n\nExternal release gates remain for database pool/CPU/storage/replica-lag metrics and Redis memory/eviction/failover state. Targets are engineering objectives. This dashboard is not representative-load, failover, restore, cost, or production SLO evidence.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "10.4.0",
+      "title": "Operations contract",
+      "type": "text"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["inspacy", "operations", "slo", "engineering-baseline"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus",
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(inspacy:http_server_requests:rate5m, deployment_environment_name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Environment",
+        "multi": true,
+        "name": "environment",
+        "options": [],
+        "query": { "query": "label_values(inspacy:http_server_requests:rate5m, deployment_environment_name)", "refId": "StandardVariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "definition": "label_values(inspacy:http_server_requests:rate5m{deployment_environment_name=~\"$environment\"}, service_name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Service",
+        "multi": true,
+        "name": "service",
+        "options": [],
+        "query": { "query": "label_values(inspacy:http_server_requests:rate5m{deployment_environment_name=~\"$environment\"}, service_name)", "refId": "StandardVariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Inspacy Operations — SLO and Async Health",
+  "uid": "inspacy-operations",
+  "version": 1,
+  "weekStart": ""
+}

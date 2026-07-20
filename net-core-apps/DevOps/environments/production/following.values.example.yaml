@@ -1,0 +1,29 @@
+service:
+  name: following
+  image:
+    repository: registry.invalid/inspacy/following-api
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+roles:
+  api:
+    secretName: following-api-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    autoscaling: { maxReplicas: 40 }
+  consumer:
+    secretName: following-consumer-runtime
+    certificateSecretKey: secret-provider-client.pfx
+    autoscaling: { maxReplicas: 30 }
+  job:
+    enabled: false
+    secretName: following-job-runtime
+    certificateSecretKey: secret-provider-client.pfx
+migration:
+  secretName: following-migration
+  certificateSecretKey: secret-provider-client.pfx
+
+networkPolicy:
+  apiIngress:
+    - namespaceSelector: { kubernetes.io/metadata.name: comment }
+      podSelector:
+        app.kubernetes.io/name: comment
+        inspacy.io/runtime-role: job
+      ports: [{ protocol: TCP, port: 8080 }]
