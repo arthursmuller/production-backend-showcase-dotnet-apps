@@ -10,9 +10,9 @@
       },
       "Mediator.SourceGenerator": {
         "type": "Direct",
-        "requested": "[2.1.7, )",
-        "resolved": "2.1.7",
-        "contentHash": "/rvBPx8LFyGKtkZZhoDlWxR7IDEEgdvjRQkvUEOrxT5QzN920gdggRIIImvAHbZIEGydzwcaphr0jUvap615fw=="
+        "requested": "[3.0.2, )",
+        "resolved": "3.0.2",
+        "contentHash": "yGQzb8Or3nGsQJnVUQIQHr/04LeThd3qMZV0gvgMtXdgH35Rw2xJ2XyQ87v6HhNYOUZ2iirRjUWceebyNKMF7Q=="
       },
       "Microsoft.EntityFrameworkCore.Abstractions": {
         "type": "Transitive",
