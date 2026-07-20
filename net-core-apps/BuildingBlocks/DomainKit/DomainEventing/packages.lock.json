@@ -4,11 +4,11 @@
     "net10.0": {
       "Mediator.Abstractions": {
         "type": "Direct",
-        "requested": "[2.1.7, )",
-        "resolved": "2.1.7",
-        "contentHash": "93GWsxuikSVSGvWeNwkMecMXjUYURNyNj978FTnH7PhC3hrGh8mERNkxRNWIvLj7k0nnrnsQxixEQ0NxRXNkow==",
+        "requested": "[3.0.2, )",
+        "resolved": "3.0.2",
+        "contentHash": "TytjnyN8gLObZBxkM7HHPFJF3LHtk6Y8mHW56ONuXRuVEK6Fmed3f0z79H9TpmoZQP2zQAIS4/0O9R2w0v02qw==",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "6.0.0"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0"
         }
       },
       "Microsoft.EntityFrameworkCore": {
