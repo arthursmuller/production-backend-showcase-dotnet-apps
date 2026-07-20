@@ -4,11 +4,11 @@
     "net10.0": {
       "MassTransit": {
         "type": "Direct",
-        "requested": "[8.5.10, )",
-        "resolved": "8.5.10",
-        "contentHash": "TGi34UA8RftBIpYCHEdoIP5uSu2/pLWZRen4RUcg4CV1nr8MmCZMuFYjzvXXUyFcj0ZuRQxZZNhG7fB5/raSOg==",
+        "requested": "[9.1.2, )",
+        "resolved": "9.1.2",
+        "contentHash": "7rHsXnvoQ+YpKBlWhkBPwkkbq9kK+mK2hro3Z7m1CfCqVUZPsDh/lmkuVkEXKsr+mY6fgG3rxQLaLTYVYaqsEw==",
         "dependencies": {
-          "MassTransit.Abstractions": "8.5.10"
+          "MassTransit.Abstractions": "9.1.2"
         }
       },
       "MassTransit.Analyzers": {
@@ -25,8 +25,8 @@
       },
       "MassTransit.Abstractions": {
         "type": "Transitive",
-        "resolved": "8.5.10",
-        "contentHash": "nZnm2YNH+NcVwY6yC114sJy8J9LtKdFjfKUm/A5HfmzOlZ8ksjgHaPBg5XCG1VAqKDRDFnaudIcesVultKJD7g=="
+        "resolved": "9.1.2",
+        "contentHash": "o2MymiTaxaJ0LUNm6W/8taD1u6Q/hyee1FwM/XvJ8l4IHgGBOVllPLuViYiI/XDu/t86ErjXOJqXrkOB/+ZrCg=="
       },
       "Microsoft.Bcl.Cryptography": {
         "type": "Transitive",
@@ -385,7 +385,7 @@
           "Interaction.Application": "[1.0.0, )",
           "Interaction.Domain": "[1.0.0, )",
           "MariaDbConfiguration": "[1.0.0, )",
-          "MassTransit": "[8.5.10, )",
+          "MassTransit": "[9.1.2, )",
           "MassTransit.EntityFrameworkCore": "[8.5.10, )",
           "MessageBrokerContracts": "[1.0.0, )",
           "MessageBrokerExtensions": "[1.0.0, )",
@@ -415,7 +415,7 @@
       "messagebrokerextensions": {
         "type": "Project",
         "dependencies": {
-          "MassTransit": "[8.5.10, )",
+          "MassTransit": "[9.1.2, )",
           "MassTransit.EntityFrameworkCore": "[8.5.10, )",
           "MassTransit.RabbitMQ": "[8.5.10, )",
           "MessageBrokerCore": "[1.0.0, )",
