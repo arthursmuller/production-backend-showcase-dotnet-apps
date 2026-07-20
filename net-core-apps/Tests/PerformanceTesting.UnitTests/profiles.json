@@ -1,0 +1,66 @@
+{
+  "$schema": "performance-profiles.schema.json",
+  "operations": {
+    "safe-live": {
+      "path": "/health/live",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "safe-ready": {
+      "path": "/health/ready",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "authenticated-write": {
+      "path": "/api/test/{sequence}",
+      "method": "POST",
+      "body": "{\"run\":\"{runId}\",\"sequence\":{sequence}}",
+      "contentType": "application/json",
+      "requiresAuthentication": true
+    }
+  },
+  "profiles": {
+    "smoke": {
+      "enabled": true,
+      "arrivalModel": "paced-fixed-rate",
+      "durationSeconds": 1,
+      "recoverySeconds": 0,
+      "startConcurrency": 1,
+      "concurrency": 1,
+      "targetRps": 1,
+      "requestTimeoutSeconds": 1,
+      "mix": [
+        { "operation": "safe-live", "weight": 2 },
+        { "operation": "safe-ready", "weight": 1 }
+      ]
+    },
+    "baseline": {
+      "enabled": false,
+      "arrivalModel": "paced-fixed-rate",
+      "durationSeconds": null,
+      "recoverySeconds": 0,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "authenticated-write", "weight": 1 },
+        { "operation": "safe-ready", "weight": 1 }
+      ]
+    },
+    "representative": {
+      "enabled": false,
+      "arrivalModel": "paced-fixed-rate",
+      "durationSeconds": null,
+      "recoverySeconds": 0,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "authenticated-write", "weight": 1 },
+        { "operation": "safe-ready", "weight": 1 }
+      ]
+    }
+  }
+}

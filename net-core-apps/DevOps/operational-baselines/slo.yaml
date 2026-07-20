@@ -1,0 +1,64 @@
+schema_version: 2
+status: engineering_target_pending_measurement
+owner: backend-architecture
+approver: product-and-sre-approval-required
+decision_due: 2026-08-14
+reviewed_at: 2026-07-17
+window_days: 28
+
+services:
+  - name: Comment
+    availability_percent: 99.95
+    latency_ms: { p50: 50, p95: 250, p99: 750 }
+    error_rate_percent_maximum: 0.10
+    rpo_seconds: 300
+    rto_seconds: 1800
+  - name: Feed
+    availability_percent: 99.95
+    latency_ms: { p50: 50, p95: 200, p99: 600 }
+    error_rate_percent_maximum: 0.10
+    rpo_seconds: 300
+    rto_seconds: 1800
+  - name: Following
+    availability_percent: 99.95
+    latency_ms: { p50: 40, p95: 200, p99: 600 }
+    error_rate_percent_maximum: 0.10
+    rpo_seconds: 300
+    rto_seconds: 1800
+  - name: Interaction
+    availability_percent: 99.95
+    latency_ms: { p50: 30, p95: 150, p99: 500 }
+    error_rate_percent_maximum: 0.10
+    rpo_seconds: 300
+    rto_seconds: 1800
+  - name: Moderation
+    availability_percent: 99.90
+    latency_ms: { p50: 80, p95: 400, p99: 1200 }
+    error_rate_percent_maximum: 0.25
+    rpo_seconds: 0
+    rto_seconds: 1800
+
+async_limits:
+  outbox_oldest_age_seconds: 30
+  projection_lag_seconds: 60
+  feed_convergence_seconds: 60
+  visibility_revocation_seconds: 5
+  moderation_first_response_seconds: 14400
+  backlog_recovery_seconds: 1800
+  projection_rebuild_seconds: 14400
+
+error_budget:
+  window_days: 28
+  fast_burn:
+    threshold_multiplier: 14.4
+    lookback_minutes: 60
+  slow_burn:
+    threshold_multiplier: 2.0
+    lookback_minutes: 360
+
+safety_gate:
+  no_unowned_tbd: true
+  approved_for_release_gating: true
+  measured_in_representative_environment: false
+  approved_for_production_release: false
+  production_release_blocker: representative_slo_and_recovery_evidence_required

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -12,112 +13,131 @@ using Microsoft.Extensions.Logging;
 namespace EfCoreMigrations;
 
 /// <summary>
-/// Generic schema-apply helpers for EF Core <see cref="DbContext"/> derivatives.
-/// Replaces the per-service <c>ApplySchema</c> extension methods that used to
-/// live next to each <c>DbContext</c>.
+/// Generic, cancellation-aware schema helpers for EF Core <see cref="DbContext"/> derivatives.
 /// </summary>
 public static class EfCoreMigrationsExtensions
 {
     /// <summary>
-    /// Resolves the supplied <paramref name="contextType"/> from the application
-    /// service provider and runs <see cref="DatabaseFacade.Migrate"/> with retry
-    /// (skipped when running under K8S so the pod can crash-loop into readiness).
+    /// Applies migrations for every supplied context type in sequence. An empty sequence is a no-op.
     /// </summary>
-    public static IApplicationBuilder ApplySchema(this IApplicationBuilder app, Type contextType)
+    public static async Task<IApplicationBuilder> ApplySchemaForAllAsync(
+        this IApplicationBuilder app,
+        IEnumerable<Type> contextTypes,
+        CancellationToken cancellationToken)
     {
-        if (app == null) throw new ArgumentNullException(nameof(app));
-        if (contextType == null) throw new ArgumentNullException(nameof(contextType));
-        if (!typeof(DbContext).IsAssignableFrom(contextType))
-            throw new ArgumentException($"{contextType.FullName} is not a DbContext.", nameof(contextType));
+        if (contextTypes is null)
+            return app;
 
         using var scope = app.ApplicationServices.CreateScope();
-        ApplySchemaCore(scope.ServiceProvider, contextType);
+        foreach (var contextType in contextTypes)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await ApplySchemaCoreAsync(scope.ServiceProvider, contextType, cancellationToken);
+        }
+
         return app;
     }
 
     /// <summary>
-    /// Strongly-typed convenience wrapper around <see cref="ApplySchema(IApplicationBuilder, Type)"/>.
-    /// </summary>
-    public static IApplicationBuilder ApplySchema<TContext>(this IApplicationBuilder app)
-        where TContext : DbContext
-        => app.ApplySchema(typeof(TContext));
-
-    /// <summary>
-    /// Applies <see cref="DatabaseFacade.Migrate"/> for every context type in
-    /// <paramref name="contextTypes"/>. When the sequence is empty the call is a
-    /// no-op.
-    /// </summary>
-    public static IApplicationBuilder ApplySchemaForAll(this IApplicationBuilder app, IEnumerable<Type> contextTypes)
-    {
-        if (contextTypes == null) return app;
-        using var scope = app.ApplicationServices.CreateScope();
-        foreach (var t in contextTypes)
-            ApplySchemaCore(scope.ServiceProvider, t);
-        return app;
-    }
-
-    /// <summary>
-    /// Scans the supplied assemblies for concrete <see cref="DbContext"/>
-    /// derivatives. Used by the <c>WithDatabases</c> auto-discovery path.
+    /// Scans the supplied assemblies for concrete <see cref="DbContext"/> derivatives.
     /// </summary>
     public static IEnumerable<Type> DiscoverContexts(IEnumerable<Assembly> assemblies)
     {
-        if (assemblies == null) yield break;
+        if (assemblies is null)
+            yield break;
 
-        foreach (var asm in assemblies)
+        foreach (var assembly in assemblies)
         {
-            if (asm == null) continue;
-            Type[] types;
-            try { types = asm.GetTypes(); }
-            catch (ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t != null).ToArray()!; }
-            catch { continue; }
+            if (assembly is null)
+                continue;
 
-            foreach (var t in types)
+            Type[] types;
+            try
             {
-                if (t == null) continue;
-                if (t.IsAbstract || t.IsInterface || t.IsGenericTypeDefinition) continue;
-                if (!typeof(DbContext).IsAssignableFrom(t)) continue;
-                yield return t;
+                types = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException exception)
+            {
+                types = exception.Types.Where(type => type is not null).ToArray()!;
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var type in types)
+            {
+                if (type is null || type.IsAbstract || type.IsInterface || type.IsGenericTypeDefinition)
+                    continue;
+                if (typeof(DbContext).IsAssignableFrom(type))
+                    yield return type;
             }
         }
     }
 
-    private static void ApplySchemaCore(IServiceProvider services, Type contextType)
+    private static Task ApplySchemaCoreAsync(
+        IServiceProvider services,
+        Type contextType,
+        CancellationToken cancellationToken)
     {
         var loggerFactory = services.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger($"EfCoreMigrations.{contextType.Name}");
-
-        var ctx = (DbContext)services.GetRequiredService(contextType);
-
-        const int maxRetries = 10;
+        var context = (DbContext)services.GetRequiredService(contextType);
         var underK8s = string.Equals(
             services.GetRequiredService<IConfiguration>()["OrchestratorType"],
             "K8S",
             StringComparison.OrdinalIgnoreCase);
 
-        for (var attempt = 1; attempt <= maxRetries; attempt++)
+        return ExecuteMigrationWithRetryAsync(
+            token => context.Database.MigrateAsync(token),
+            underK8s,
+            logger,
+            contextType.Name,
+            cancellationToken);
+    }
+
+    internal static async Task ExecuteMigrationWithRetryAsync(
+        Func<CancellationToken, Task> migrateAsync,
+        bool underK8s,
+        ILogger logger,
+        string contextName,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(migrateAsync);
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contextName);
+
+        const int maxAttempts = 10;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 logger.LogInformation(
                     "Applying migrations for {DbContext} (attempt {Attempt}/{Max})",
-                    contextType.Name, attempt, maxRetries);
+                    contextName,
+                    attempt,
+                    maxAttempts);
 
-                ctx.Database.Migrate();
-                logger.LogInformation("Migrations applied for {DbContext}", contextType.Name);
+                await migrateAsync(cancellationToken);
+                logger.LogInformation("Migrations applied for {DbContext}", contextName);
                 return;
             }
-            catch (Exception ex) when (attempt < maxRetries && !underK8s)
+            catch (Exception exception) when (
+                exception is not OperationCanceledException
+                && attempt < maxAttempts
+                && !underK8s
+                && !cancellationToken.IsCancellationRequested)
             {
                 var delay = TimeSpan.FromSeconds(Math.Min(30, Math.Pow(2, attempt)));
-                logger.LogWarning(ex,
-                    "Migration attempt {Attempt} for {DbContext} failed: {Message}. Retrying in {Delay}s.",
-                    attempt, contextType.Name, ex.Message, delay.TotalSeconds);
-                Thread.Sleep(delay);
+                logger.LogWarning(
+                    exception,
+                    "Migration attempt {Attempt} for {DbContext} failed. Retrying in {Delay}s.",
+                    attempt,
+                    contextName,
+                    delay.TotalSeconds);
+                await Task.Delay(delay, cancellationToken);
             }
         }
-
-        // Final attempt – let exceptions bubble.
-        ctx.Database.Migrate();
     }
 }

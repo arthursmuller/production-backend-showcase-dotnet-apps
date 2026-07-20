@@ -1,0 +1,983 @@
+{
+  "formatVersion": 2,
+  "sourceEvidenceCommit": "f969b7363bbac5787625ed0875264abe6a2c415c",
+  "regenerationCommand": "pwsh -File Tests/ApiContract.Tests/Baselines/regenerate-message-contract-baseline.ps1",
+  "contractCount": 22,
+  "contractShapeSha256": "e420a9a241b613c825a94a934ac12a3095c4319b1eef5666757d33ca2f9b82a5",
+  "contracts": [
+    {
+      "contract": "Interaction.Contracts.CommentResourceStateChanged",
+      "fields": [
+        {
+          "wireName": "CommentId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Lifecycle",
+          "clrType": "Interaction.Contracts.ResourceLifecycle",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SourceVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Visibility",
+          "clrType": "Interaction.Contracts.ResourceVisibility",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Interaction.Contracts.EngagementSummaryChanged",
+      "fields": [
+        {
+          "wireName": "CommentCount",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "DislikeCount",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "LikeCount",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RatingCount",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RatingTotal",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceType",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ShareCount",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SummaryVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ViewCount",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Interaction.Contracts.PostResourceStateChanged",
+      "fields": [
+        {
+          "wireName": "Lifecycle",
+          "clrType": "Interaction.Contracts.ResourceLifecycle",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "PostId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SourceVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Visibility",
+          "clrType": "Interaction.Contracts.ResourceVisibility",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Interaction.Contracts.RatingChanged",
+      "fields": [
+        {
+          "wireName": "ActorId",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "InteractionVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceType",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Score",
+          "clrType": "System.Byte?",
+          "required": false,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Interaction.Contracts.ReactionChanged",
+      "fields": [
+        {
+          "wireName": "ActorId",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "InteractionVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Kind",
+          "clrType": "Interaction.Contracts.ReactionKind?",
+          "required": false,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceType",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Interaction.Contracts.ResourceContributionChanged",
+      "fields": [
+        {
+          "wireName": "CommentCount",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceType",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ShareCount",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SourceVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Categories.CategoryFollowsChanged",
+      "fields": [
+        {
+          "wireName": "CategoryIds",
+          "clrType": "System.Collections.Generic.IReadOnlyList\u003CSystem.Int32\u003E",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "CategoryNames",
+          "clrType": "System.Collections.Generic.IReadOnlyList\u003CSystem.String\u003E",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "IsFollowing",
+          "clrType": "System.Boolean",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Categories.CategoryMentionsChanged",
+      "fields": [
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "NamesAdded",
+          "clrType": "System.Collections.Generic.IReadOnlyList\u003CSystem.String\u003E",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "NamesRemoved",
+          "clrType": "System.Collections.Generic.IReadOnlyList\u003CSystem.String\u003E",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Feed.FeedActivityChanged",
+      "fields": [
+        {
+          "wireName": "ActivityKind",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ActorUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "AudiencePolicy",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "PublishedAtUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RankKey",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ReasonCode",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "State",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "StreamId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "StreamVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "TargetId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "TargetType",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Following.RelationshipSnapshotPage",
+      "fields": [
+        {
+          "wireName": "HasMore",
+          "clrType": "System.Boolean",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Items",
+          "clrType": "System.Collections.Generic.IReadOnlyList\u003CMessageBrokerContracts.Following.RelationshipStateSnapshot\u003E",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "NextCursor",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SnapshotAsOfUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SnapshotHighWatermark",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Following.RelationshipStateChanged",
+      "fields": [
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OwnerUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ReasonCode",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RelationshipKind",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "State",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "StreamId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "StreamVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ViewerUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Following.RelationshipStateSnapshot",
+      "fields": [
+        {
+          "wireName": "AsOfUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Cursor",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "LastEventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OwnerUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RelationshipKind",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "State",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "StreamId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "StreamVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ViewerUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Following.SubscriptionFeatureParticipant",
+      "fields": [
+        {
+          "wireName": "DisplayName",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "UserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Following.SubscriptionFeatureUpdated",
+      "fields": [
+        {
+          "wireName": "EndDateUtc",
+          "clrType": "System.DateTime?",
+          "required": false,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Owner",
+          "clrType": "MessageBrokerContracts.Following.SubscriptionFeatureParticipant",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Requester",
+          "clrType": "MessageBrokerContracts.Following.SubscriptionFeatureParticipant",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SubscriptionId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Notification.NotificationRequested",
+      "fields": [
+        {
+          "wireName": "ChannelIds",
+          "clrType": "System.Collections.Generic.IReadOnlyList\u003CSystem.Int32\u003E",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Message",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RecipientUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ReplacementUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SourceEntityId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SourceEntityType",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "SourceUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Title",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Posts.PostCommentCountChanged",
+      "fields": [
+        {
+          "wireName": "ActorUserId",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Delta",
+          "clrType": "System.Int32",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTime",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "PostId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "PostType",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Privacy.Restricted.UserErasureCompleted",
+      "fields": [
+        {
+          "wireName": "CompletedAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ErasureVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Outcome",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RequestId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Service",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "UserId",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "MessageBrokerContracts.Privacy.Restricted.UserErasureRequested",
+      "fields": [
+        {
+          "wireName": "ErasureVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EventId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RequestId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "RequestedAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "UserId",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Moderation.Contracts.ModerationActionApplied",
+      "fields": [
+        {
+          "wireName": "Action",
+          "clrType": "Moderation.Contracts.ModerationDecisionAction",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "CaseId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "DecisionVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceKind",
+          "clrType": "Moderation.Contracts.ModeratedResourceKind",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Moderation.Contracts.ModerationDecisionMade",
+      "fields": [
+        {
+          "wireName": "Action",
+          "clrType": "Moderation.Contracts.ModerationDecisionAction",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "CaseId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "DecisionVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceId",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "ResourceKind",
+          "clrType": "Moderation.Contracts.ModeratedResourceKind",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Moderation.Contracts.Restricted.ModerationCaseChangedRestricted",
+      "fields": [
+        {
+          "wireName": "Action",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "CaseId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "CaseVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "OccurredAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Status",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    },
+    {
+      "contract": "Moderation.Contracts.Restricted.ModerationCaseEscalatedRestricted",
+      "fields": [
+        {
+          "wireName": "CaseId",
+          "clrType": "System.Guid",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "CaseVersion",
+          "clrType": "System.Int64",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "EscalatedAtUtc",
+          "clrType": "System.DateTimeOffset",
+          "required": true,
+          "omitWhenNull": false
+        },
+        {
+          "wireName": "Priority",
+          "clrType": "System.String",
+          "required": true,
+          "omitWhenNull": false
+        }
+      ]
+    }
+  ]
+}

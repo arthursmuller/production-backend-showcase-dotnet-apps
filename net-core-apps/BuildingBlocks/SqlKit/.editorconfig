@@ -1,0 +1,5 @@
+root = false
+
+[*.cs]
+# Cancellation must flow through async migration, query, and transaction operations.
+dotnet_diagnostic.CA2016.severity = error

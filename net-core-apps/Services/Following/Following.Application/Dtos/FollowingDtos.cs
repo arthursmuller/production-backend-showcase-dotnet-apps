@@ -1,36 +1,20 @@
 using Following.Domain.AggregatesModel;
+using Following.Domain.Dtos;
+using Following.Domain.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Following.Application.Dtos
 {
-    public class FriendsRequestCriteria : CommomFilter
-    {
-        public bool SentRequests { get; set; }
-        public bool? Pending { get; set; }
-    }
-
-    public class FriendsCriteria : CommomFilter
-    {
-        public int? UserId { get; set; }
-    }
-
-    public class FollowsCriteria : CommomFilter
-    {
-        public int UserId { get; set; }
-        public bool Following { get; set; }
-    }
-
-    public class CategoryFollowsCriteria : CommomFilter
-    {
-        public int UserId { get; set; }
-    }
-
     public class RequestFriendshipDto
     {
         public int UserId { get; set; }
     }
+
+    public sealed record ApproveFriendRequestInput(
+        int RequestId,
+        FriendRequestDecisionDomainDto Decision);
 
     public class FollowDto
     {
@@ -43,34 +27,30 @@ namespace Following.Application.Dtos
         public string[] Names { get; set; } = Array.Empty<string>();
     }
 
-    public class CheckUserFollowDto
-    {
-        public int[] Ids { get; set; }
-    }
-
     public class CheckCategoryFollowResDto
     {
         public int? Id { get; set; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public bool IsFollowing { get; set; }
     }
 
-    public class CheckUserFollowResDto
-    {
-        public int Id { get; set; }
-        public bool IsFollowing { get; set; }
-    }
+    /// <summary>
+    /// Stable transport receipt containing only identifiers needed to locate the
+    /// relationship status resource.
+    /// </summary>
+    public sealed record FollowingMutationReceiptDto(
+        string RelationshipKind,
+        int TargetId,
+        int ResourceId);
 
-    public class CategoryFollowDto
-    {
-        public int? CategoryId { get; set; }
-        public string CategoryName { get; set; }
-    }
+    public sealed record AddCategoryFollowInput(
+        int? CategoryId,
+        CategoryFollowDomainDto Details);
 
     public class RemoveCategoryFollowDto
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 
     public class GetRelationsDto
@@ -78,26 +58,24 @@ namespace Following.Application.Dtos
         public bool IsFriend { get; set; }
         public bool IsFriendRequestSent { get; set; }
         public bool IsFollowing { get; set; }
+        public bool IsBlockedByCurrentUser { get; set; }
+        public bool IsCurrentUserBlocked { get; set; }
+
+        public static GetRelationsDto FromDomain(RelationsSnapshot value) => new()
+        {
+            IsFriend = value.IsFriend,
+            IsFriendRequestSent = value.IsFriendRequestSent,
+            IsFollowing = value.IsFollowing,
+            IsBlockedByCurrentUser = value.IsBlockedByCurrentUser,
+            IsCurrentUserBlocked = value.IsCurrentUserBlocked,
+        };
     }
 
-    public class GetPendingRequestsDto
+    public sealed class SubscriptionFeatureUpdatedDto : SubscriptionFeatureUpdateDomainDto
     {
-        public bool HasFriendRequestPending { get; set; }
-    }
-
-    public class GetUserFollowersAndFriendsIdDto
-    {
-        public int[] Friends { get; set; }
-        public int[] Followers { get; set; }
-        public int[] Categories { get; set; }
-    }
-
-    public class SubscriptionFeatureUpdatedDto
-    {
-        public SubscriptionFeatureUpdatedUserDto Owner;
-        public SubscriptionFeatureUpdatedUserDto Requester;
-        public string SubscriptionId;
-        public DateTime? EndDate;
+        public SubscriptionFeatureUpdatedUserDto Owner { get; }
+        public SubscriptionFeatureUpdatedUserDto Requester { get; }
+        public string SubscriptionId { get; }
 
         public SubscriptionFeatureUpdatedDto(
             SubscriptionFeatureUpdatedUserDto owner,
@@ -110,25 +88,9 @@ namespace Following.Application.Dtos
             SubscriptionId = subscriptionId;
             EndDate = endDate;
         }
-
-        public SubscriptionFeatureUpdatedDto() { }
     }
 
-    public class SubscriptionFeatureUpdatedUserDto
-    {
-        public int Id;
-        public string Name;
-
-        public SubscriptionFeatureUpdatedUserDto(int id, string name)
-        {
-            Id = id;
-            Name = name;
-        }
-
-        public SubscriptionFeatureUpdatedUserDto() { }
-
-        public static implicit operator int(SubscriptionFeatureUpdatedUserDto value) => value.Id;
-    }
+    public sealed record SubscriptionFeatureUpdatedUserDto(int Id, string Name);
 
     public static class DtoConversor
     {
@@ -140,21 +102,21 @@ namespace Following.Application.Dtos
 
             foreach (var id in dto.Ids)
             {
-                var follow = follows?.FirstOrDefault(item => item.Followed.Id == id);
+                var follow = follows?.FirstOrDefault(item => item.CategoryId == id);
                 byId.Add(new CheckCategoryFollowResDto
                 {
                     Id = id,
                     IsFollowing = follow is not null,
-                    Name = follow?.Followed?.Name
+                    Name = follow?.CategoryName
                 });
             }
 
             foreach (var name in dto.Names)
             {
-                var follow = follows?.FirstOrDefault(item => item.Followed.Name == name);
+                var follow = follows?.FirstOrDefault(item => item.CategoryName == name);
                 byName.Add(new CheckCategoryFollowResDto
                 {
-                    Id = follow?.Followed?.Id,
+                    Id = follow?.CategoryId,
                     IsFollowing = follow is not null,
                     Name = name
                 });

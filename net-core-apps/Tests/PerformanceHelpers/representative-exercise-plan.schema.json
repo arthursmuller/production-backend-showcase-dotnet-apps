@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inspacy.local/schemas/representative-exercise-plan.schema.json",
+  "title": "Representative exercise plan",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "planId",
+    "description",
+    "allowedTargetEnvironments",
+    "forbiddenTargetEnvironments",
+    "evidenceRetentionDays",
+    "globalAbortConditions",
+    "exercises"
+  ],
+  "properties": {
+    "$schema": { "const": "representative-exercise-plan.schema.json" },
+    "schemaVersion": { "const": "2.0" },
+    "planId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "description": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "allowedTargetEnvironments": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/environmentName" }
+    },
+    "forbiddenTargetEnvironments": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "contains": { "const": "production" },
+      "items": { "$ref": "#/$defs/environmentName" }
+    },
+    "evidenceRetentionDays": { "type": "integer", "minimum": 30, "maximum": 3650 },
+    "globalAbortConditions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+    },
+    "exercises": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": { "$ref": "#/$defs/exercise" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "environmentName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "exerciseType": {
+      "enum": [
+        "projection-rebuild",
+        "performance-baseline",
+        "ddl-role-separation",
+        "migration-recovery",
+        "storage-scale-read-replica",
+        "dependency-resilience",
+        "database-failover",
+        "backup-restore-pitr",
+        "az-region-failback",
+        "cache-zero-backlog",
+        "connection-cost-headroom",
+        "canary-rollback"
+      ]
+    },
+    "gate": {
+      "enum": ["0.7", "0.10", "2.9", "2.10", "2.11", "6.9", "6.10", "6.11", "6.12"]
+    },
+    "approverRole": {
+      "enum": [
+        "cache-owner",
+        "database-engineering",
+        "finance-cost",
+        "messaging-owner",
+        "platform-sre",
+        "privacy-legal",
+        "product",
+        "release-manager",
+        "security",
+        "service-owner"
+      ]
+    },
+    "attestationClaim": {
+      "enum": [
+        "runtime-ddl-denied",
+        "runtime-dml-smoke-passed",
+        "migration-only-ddl-verified",
+        "cross-role-isolation-verified"
+      ]
+    },
+    "serviceDomain": {
+      "enum": ["comment", "feed", "following", "interaction", "moderation"]
+    },
+    "attestationRequirement": {
+      "type": "object",
+      "required": [
+        "type",
+        "requiredServiceDomains",
+        "requiredClaims",
+        "requiredApprovalRoles"
+      ],
+      "properties": {
+        "type": { "const": "production-principal-grant" },
+        "requiredServiceDomains": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/serviceDomain" }
+        },
+        "requiredClaims": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/attestationClaim" }
+        },
+        "requiredApprovalRoles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/approverRole" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "metric": {
+      "type": "object",
+      "required": ["name", "unit", "operator", "target", "rationale"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "pattern": "^[a-z][a-z0-9_.-]+$"
+        },
+        "unit": {
+          "enum": [
+            "count",
+            "percent",
+            "milliseconds",
+            "seconds",
+            "bytes",
+            "connections",
+            "currency-percent"
+          ]
+        },
+        "operator": { "enum": ["<=", ">=", "=="] },
+        "target": { "type": "number" },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 240 }
+      },
+      "additionalProperties": false
+    },
+    "exercise": {
+      "type": "object",
+      "required": [
+        "type",
+        "gates",
+        "objective",
+        "runbook",
+        "maximumDurationMinutes",
+        "requiresIsolatedTarget",
+        "requiresSanitizedData",
+        "requiresWriterFence",
+        "requiredApproverRoles",
+        "requiredAttestations",
+        "requiredPhases",
+        "requiredFaults",
+        "requiredMetrics",
+        "requiredArtifacts",
+        "abortConditions"
+      ],
+      "properties": {
+        "type": { "$ref": "#/$defs/exerciseType" },
+        "gates": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/gate" }
+        },
+        "objective": { "type": "string", "minLength": 1, "maxLength": 400 },
+        "runbook": {
+          "type": "string",
+          "pattern": "^\\.\\./README\\.md#[a-z0-9-]+$",
+          "maxLength": 200
+        },
+        "maximumDurationMinutes": { "type": "integer", "minimum": 1, "maximum": 10080 },
+        "requiresIsolatedTarget": { "type": "boolean" },
+        "requiresSanitizedData": { "const": true },
+        "requiresWriterFence": { "type": "boolean" },
+        "requiredApproverRoles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/approverRole" }
+        },
+        "requiredAttestations": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "$ref": "#/$defs/attestationRequirement" }
+        },
+        "requiredPhases": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9-]+$"
+          }
+        },
+        "requiredFaults": {
+          "type": "array",
+          "maxItems": 24,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9-]+$"
+          }
+        },
+        "requiredMetrics": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "items": { "$ref": "#/$defs/metric" }
+        },
+        "requiredArtifacts": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "approval-record",
+              "cardinality-manifest",
+              "command-log",
+              "configuration-manifest",
+              "cost-export",
+              "fault-timeline",
+              "grant-report",
+              "integrity-report",
+              "metric-export",
+              "performance-result",
+              "production-grant-policy-export",
+              "production-principal-attestation",
+              "query-plan-report",
+              "reconciliation-report",
+              "restore-manifest",
+              "rollback-report",
+              "schema-report",
+              "topology-manifest"
+            ]
+          }
+        },
+        "abortConditions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

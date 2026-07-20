@@ -7,8 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Brokers\MessageBrokerRabbitMq\MessageBrokerRabbitMq.csproj" />
-    <ProjectReference Include="..\..\Brokers\MessageBrokerExtensions\MessageBrokerExtensions.csproj" />
     <ProjectReference Include="..\AuthenticationProvider\AuthenticationProvider.csproj" />
     <ProjectReference Include="..\..\ApiKit\HttpClientHelper\HttpClientHelper.csproj" />
   </ItemGroup>

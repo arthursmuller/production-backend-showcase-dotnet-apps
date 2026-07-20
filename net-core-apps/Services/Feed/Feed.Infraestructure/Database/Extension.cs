@@ -1,9 +1,8 @@
-using Feed.Application.Abstractions;
 using Feed.Infra.Persistence;
+using Inspacy.Data.MariaDb;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace Feed.Infra.Database;
 
@@ -11,19 +10,15 @@ public static class FeedDatabaseExtensions
 {
     public static IServiceCollection ConfigureDb(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = GetSetting("SQL_CONNECTION_STRING", configuration)
-            ?? throw new InvalidOperationException("SQL_CONNECTION_STRING is required.");
+        var connection = MariaDbConnectionPolicy.Create(configuration, "feed");
+        services.AddMariaDbCommandTelemetry(configuration);
 
-        services.AddDbContext<FeedContext>(opt =>
+        services.AddDbContextPool<FeedContext>((provider, options) =>
         {
-            opt.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-        }, ServiceLifetime.Scoped);
-
-        services.AddScoped<IFeedRepository, FeedRepository>();
+            options.UseMariaDbRuntime(connection, provider);
+        },
+            poolSize: 128);
 
         return services;
     }
-
-    private static string? GetSetting(string setting, IConfiguration configuration) =>
-        Environment.GetEnvironmentVariable(setting) ?? configuration[setting];
 }

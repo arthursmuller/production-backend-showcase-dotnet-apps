@@ -1,0 +1,87 @@
+{{- if and .Values.service.enabled .Values.migration.enabled }}
+{{- $secretName := required "migration.secretName is required when migration.enabled=true" .Values.migration.secretName }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "inspacy-service.roleName" (dict "root" . "role" "migration") }}
+  labels:
+{{ include "inspacy-service.commonLabels" . | indent 4 }}
+    inspacy.io/runtime-role: migration
+  {{- if .Values.migration.helmHook }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  {{- end }}
+spec:
+  activeDeadlineSeconds: {{ .Values.migration.activeDeadlineSeconds }}
+  backoffLimit: {{ .Values.migration.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.migration.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+{{ include "inspacy-service.selectorLabels" (dict "root" . "role" "migration") | indent 8 }}
+    spec:
+      serviceAccountName: {{ include "inspacy-service.roleName" (dict "root" . "role" "migration") }}
+      automountServiceAccountToken: {{ .Values.service.automountServiceAccountToken }}
+      enableServiceLinks: false
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+      restartPolicy: Never
+      terminationGracePeriodSeconds: {{ .Values.rollout.terminationGracePeriodSeconds }}
+      securityContext:
+{{ include "inspacy-service.podSecurityContext" . | indent 8 }}
+      {{- with .Values.service.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range . }}
+        - name: {{ . }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: migration
+          image: {{ include "inspacy-service.image" . }}
+          imagePullPolicy: {{ .Values.service.image.pullPolicy }}
+          terminationMessagePolicy: FallbackToLogsOnError
+          securityContext:
+{{ include "inspacy-service.containerSecurityContext" . | indent 12 }}
+          env:
+            - { name: Runtime__Role, value: Migration }
+          {{- if .Values.migration.certificateSecretKey }}
+            - name: SecretProvider__Certificate__Path
+              value: /var/run/secrets/inspacy/secret-provider/client.pfx
+          {{- end }}
+          {{- range $name, $value := .Values.service.commonEnv }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+          {{- end }}
+          {{- range $name, $value := .Values.migration.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+          {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ $secretName }}
+          resources:
+{{ toYaml .Values.migration.resources | indent 12 }}
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+          {{- if .Values.migration.certificateSecretKey }}
+            - name: secret-provider-client-certificate
+              mountPath: /var/run/secrets/inspacy/secret-provider
+              readOnly: true
+          {{- end }}
+      volumes:
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+      {{- if .Values.migration.certificateSecretKey }}
+        - name: secret-provider-client-certificate
+          secret:
+            secretName: {{ $secretName }}
+            defaultMode: 288
+            items:
+              - key: {{ .Values.migration.certificateSecretKey | quote }}
+                path: client.pfx
+                mode: 288
+      {{- end }}
+{{- end }}

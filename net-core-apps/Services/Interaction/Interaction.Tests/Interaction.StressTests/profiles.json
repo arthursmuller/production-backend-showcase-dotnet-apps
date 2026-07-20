@@ -1,0 +1,71 @@
+{
+  "$schema": "performance-profiles.schema.json",
+  "operations": {
+    "engagement": {
+      "path": "/api/resources/comment/performance-fixture/engagement",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "readiness": {
+      "path": "/health/ready",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "observe-view": {
+      "path": "/api/resources/comment/performance-fixture/views",
+      "method": "POST",
+      "requiresAuthentication": true
+    },
+    "set-reaction": {
+      "path": "/api/resources/comment/performance-fixture/reaction",
+      "method": "PUT",
+      "body": "{\"kind\": \"like\"}",
+      "contentType": "application/json",
+      "requiresAuthentication": true
+    }
+  },
+  "profiles": {
+    "smoke": {
+      "enabled": true,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": 6,
+      "recoverySeconds": 3,
+      "startConcurrency": 1,
+      "concurrency": 2,
+      "targetRps": 2,
+      "requestTimeoutSeconds": 10,
+      "mix": [
+        { "operation": "engagement", "weight": 4 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    },
+    "baseline": {
+      "enabled": false,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": null,
+      "recoverySeconds": null,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "observe-view", "weight": 10 },
+        { "operation": "set-reaction", "weight": 1 }
+      ]
+    },
+    "representative": {
+      "enabled": false,
+      "arrivalModel": "linear-concurrency-ramp-with-recovery",
+      "durationSeconds": null,
+      "recoverySeconds": null,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "observe-view", "weight": 10 },
+        { "operation": "set-reaction", "weight": 1 }
+      ]
+    }
+  }
+}

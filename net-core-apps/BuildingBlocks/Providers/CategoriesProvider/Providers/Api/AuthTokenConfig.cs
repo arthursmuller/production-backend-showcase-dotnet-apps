@@ -1,10 +1,10 @@
-﻿namespace CategoriesProvider.Providers.Api
+namespace CategoriesProvider.Providers.Api
 {
     public class ClientCredentialTokenConfig
     {
-        public string ClientId { get; set; }
-        public string ClientSecret { get; set; }
-        public string ReadScope { get; set; }
+        public string ClientId { get; set; } = string.Empty;
+        public string ClientSecret { get; set; } = string.Empty;
+        public string ReadScope { get; set; } = string.Empty;
 
         public ClientCredentialTokenConfig(string clientId, string clientSecret, string readScope)
         {

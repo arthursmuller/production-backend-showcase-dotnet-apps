@@ -1,39 +1,48 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
+using AuthUtils;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.OpenApi;
-using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using System.Globalization;
-using System.Reflection;
+using System.Threading;
+using Polly;
 
 namespace CommomStartupExtensions
 {
     public static class CommomStartupExtensionsMethods
     {
-        // Back-compat overload matching the legacy net-core-apps shape.
-        // Forwards to the canonical signature with derived defaults.
         public static IServiceCollection ConfigureCommomExtensions(this IServiceCollection services,
-                                                                    IConfiguration configuration,
-                                                                    Cors corsSettings,
-                                                                    string[] authPolicies = null)
-            => services.ConfigureCommomExtensions(corsSettings,
-                                                  apiName: corsSettings?.Name ?? "API",
-                                                  apiVersion: "v1",
-                                                  authPolicies: authPolicies ?? Array.Empty<string>());
-
-        public static IServiceCollection ConfigureCommomExtensions(this IServiceCollection services,
+                                                                    IConfiguration? configuration,
                                                                     Cors corsSettings,
                                                                     string apiName,
-                                                                    string apiVersion,
-                                                                    string[] authPolicies)
+                                                                    string openApiDocumentName,
+                                                                    string[] authPolicies,
+                                                                    string authScopeSection,
+                                                                    bool configureAuthentication = true)
         {
-            services
-                .ConfigureControllers()
-                .ConfigureAuthentication(authPolicies);
+            ArgumentNullException.ThrowIfNull(corsSettings);
+            ArgumentException.ThrowIfNullOrWhiteSpace(corsSettings.Name);
+            ArgumentException.ThrowIfNullOrWhiteSpace(authScopeSection);
+
+            var allowedOrigins = NormalizeCorsOrigins(corsSettings.Urls);
+
+            services.ConfigureControllers();
+            if (configureAuthentication)
+            {
+                services.ConfigureAuthentication(authPolicies, configuration, authScopeSection);
+            }
+            else
+            {
+                // Worker and migration hosts expose only anonymous operational endpoints.
+                // Register the middleware primitives without binding an API identity secret.
+                services.AddAuthentication();
+                services.AddAuthorization();
+            }
 
             services.AddHttpContextAccessor();
 
@@ -43,39 +52,29 @@ namespace CommomStartupExtensions
                     name: corsSettings.Name,
                     builder =>
                     {
-                        builder
-                            .WithOrigins(corsSettings.Urls)
-                            // 2. Dynamically allow any local network IP
-                            .SetIsOriginAllowed(origin =>
-                            {
-                                if (string.IsNullOrWhiteSpace(origin)) return false;
+                        // With no configured origins the policy intentionally grants no
+                        // cross-origin access. Origin matching remains exact; wildcard and
+                        // private-network heuristics are not safe production policies.
+                        if (allowedOrigins.Length > 0)
+                            builder.WithOrigins(allowedOrigins);
 
-                                var host = new Uri(origin).Host;
-
-                                // Return true if the host is localhost or falls into a private IP range
-                                return host == "localhost" ||
-                                    host.StartsWith("192.168.") ||
-                                    host.StartsWith("10.") ||
-                                    host.StartsWith("172.");
-                            })
-                            .AllowAnyOrigin()
-                            .AllowAnyHeader()
+                        builder.AllowAnyHeader()
                             .AllowAnyMethod();
                     });
             });
 
             // ASP.NET Core 10 native OpenAPI generator. Schemas are inferred from the
-            // System.Text.Json metadata configured in ConfigureControllers() (string enums,
-            // ReferenceHandler.IgnoreCycles, UTC ISO-8601 dates), so no schema/operation filters
+            // System.Text.Json metadata configured in ConfigureControllers() (string enums and
+            // UTC ISO-8601 dates), so no schema/operation filters
             // are required to mirror the previous Swashbuckle behaviour.
-            // Document name = apiVersion (e.g. "v1") -> served at /openapi/{apiVersion}.json.
-            services.AddOpenApi(apiVersion, options =>
+            // A single canonical document is served at /openapi/{documentName}.json.
+            services.AddOpenApi(openApiDocumentName, options =>
             {
                 options.AddDocumentTransformer((document, context, ct) =>
                 {
                     document.Info ??= new OpenApiInfo();
                     document.Info.Title = apiName;
-                    document.Info.Version = apiVersion;
+                    document.Info.Version = "current";
 
                     document.Components ??= new OpenApiComponents();
                     document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
@@ -91,10 +90,15 @@ namespace CommomStartupExtensions
                     return Task.CompletedTask;
                 });
 
-                // Advertise Bearer security on every operation so the Scalar UI shows the
-                // "Authorize" affordance for protected endpoints.
+                // Advertise Bearer security only on protected operations.
                 options.AddOperationTransformer((operation, context, ct) =>
                 {
+                    var metadata = context.Description.ActionDescriptor.EndpointMetadata;
+                    var isAnonymous = metadata.OfType<IAllowAnonymous>().Any();
+                    var isProtected = metadata.OfType<IAuthorizeData>().Any();
+                    if (isAnonymous || !isProtected)
+                        return Task.CompletedTask;
+
                     operation.Security ??= new List<OpenApiSecurityRequirement>();
                     operation.Security.Add(new OpenApiSecurityRequirement
                     {
@@ -106,171 +110,313 @@ namespace CommomStartupExtensions
 
             return services;
         }
-  
-        public static IServiceCollection ConfigureControllers(
-         this IServiceCollection services)
-        {
-            services.AddControllers(options =>
-            {
-                options.ModelBinderProviders.Insert(0, new InvariantDecimalModelBinderProvider());
-            })
-            .AddNewtonsoftJson(options => {
-                options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                options.SerializerSettings.Converters =
-                        new List<JsonConverter>()
-                        {
-                            new Newtonsoft.Json.Converters.StringEnumConverter(),
-                        };
-                options.SerializerSettings.DateFormatString = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
-                options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
-            });
 
-            // Mirror the controllers' Newtonsoft.Json configuration on the System.Text.Json options
-            // used by the retained Minimal APIs so request/response payloads behave identically across both
-            // styles: string enums, cycle-tolerant serialisation, and UTC ISO-8601 (7 fractional
-            // digits, trailing 'Z') for DateTime / DateTimeOffset.
+        public static IServiceCollection ConfigureControllers(
+            this IServiceCollection services)
+        {
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                    ApiJsonSerialization.Configure(options.JsonSerializerOptions));
+
+            // Controllers and Minimal APIs share the exact same strict System.Text.Json contract.
             services.ConfigureHttpJsonOptions(options =>
-            {
-                options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-                options.SerializerOptions.Converters.Add(new UtcIso8601DateTimeConverter());
-                options.SerializerOptions.Converters.Add(new UtcIso8601DateTimeOffsetConverter());
-                options.SerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-                options.SerializerOptions.Converters.Add(new EmptyStringDateTimeConverter());
-                options.SerializerOptions.Converters.Add(new EmptyStringInt32Converter());
-            });
+                ApiJsonSerialization.Configure(options.SerializerOptions));
 
             return services;
         }
 
 
-        public static IServiceCollection ConfigureAuthentication(this IServiceCollection services, string[] authPolicies)
+        public static IServiceCollection ConfigureAuthentication(
+            this IServiceCollection services,
+            string[] authPolicies,
+            IConfiguration? configuration = null)
+            => services.ConfigureAuthentication(
+                authPolicies,
+                configuration,
+                authScopeSection: "Identity");
+
+        public static IServiceCollection ConfigureAuthentication(
+            this IServiceCollection services,
+            string[] authPolicies,
+            IConfiguration? configuration,
+            string authScopeSection)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(authScopeSection);
+
             services.AddAuthentication(options =>
             {
                 options.DefaultScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
             });
-    
+
             services.AddOpenIddict()
                 .AddValidation(options =>
                 {
-                    options.SetIssuer(GetSetting("IDENTITY_SERVICE_URL"));
+                    var issuer = GetSetting("Identity:ServiceUrl", configuration);
+                    var clientId = GetSetting("Identity:ClientId", configuration);
+                    var validationMode = configuration?["Identity:ValidationMode"]?.Trim();
+                    if (string.IsNullOrWhiteSpace(validationMode))
+                        validationMode = "Introspection";
 
-                    options.UseIntrospection()
-                          .SetClientId(GetSetting("IDENTITY_SERVICE_CLIENT_ID"))
-                          .SetClientSecret(GetSetting("IDENTITY_SERVICE_CLIENT_SECRET"));
+                    options.SetIssuer(issuer);
+                    var audience = configuration?["Identity:Audience"];
+                    if (string.IsNullOrWhiteSpace(audience))
+                        audience = clientId;
+                    options.AddAudiences(audience);
 
-                    options.UseSystemNetHttp();
+                    if (validationMode.Equals("Introspection", StringComparison.OrdinalIgnoreCase))
+                    {
+                        options.UseIntrospection()
+                            .SetClientId(clientId)
+                            .SetClientSecret(GetSetting("Identity:ClientSecret", configuration));
+                    }
+                    else if (validationMode.Equals("Discovery", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Discovery validates self-contained access tokens locally after
+                        // retrieving the issuer's asymmetric signing keys. An explicit
+                        // audience prevents a token minted for another API being accepted.
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(
+                            "Identity:ValidationMode must be either 'Introspection' or 'Discovery'.");
+                    }
+
+                    var totalTimeout = GetBoundedMillisecondsSetting(
+                        configuration,
+                        "Identity:Transport:TotalTimeoutMilliseconds",
+                        defaultValue: 15_000,
+                        minimum: 100,
+                        maximum: 60_000);
+                    var attemptTimeout = GetBoundedMillisecondsSetting(
+                        configuration,
+                        "Identity:Transport:AttemptTimeoutMilliseconds",
+                        defaultValue: 5_000,
+                        minimum: 50,
+                        maximum: 30_000);
+                    var retryDelay = GetBoundedMillisecondsSetting(
+                        configuration,
+                        "Identity:Transport:RetryDelayMilliseconds",
+                        defaultValue: 200,
+                        minimum: 0,
+                        maximum: 5_000);
+                    if (attemptTimeout >= totalTimeout)
+                    {
+                        throw new InvalidOperationException(
+                            "Identity transport attempt timeout must be shorter than its total timeout.");
+                    }
+
+                    var transport = options.UseSystemNetHttp();
+                    transport.ConfigureHttpClient(client => client.Timeout = Timeout.InfiniteTimeSpan);
+                    transport.SetHttpResiliencePipeline(builder => builder
+                        .AddConcurrencyLimiter(permitLimit: 128, queueLimit: 0)
+                        .AddTimeout(TimeSpan.FromMilliseconds(totalTimeout))
+                        .AddRetry(new HttpRetryStrategyOptions
+                        {
+                            MaxRetryAttempts = 2,
+                            Delay = TimeSpan.FromMilliseconds(retryDelay),
+                            UseJitter = true,
+                        })
+                        .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+                        {
+                            FailureRatio = 0.5,
+                            MinimumThroughput = 20,
+                            SamplingDuration = TimeSpan.FromSeconds(30),
+                            BreakDuration = TimeSpan.FromSeconds(15),
+                        })
+                        .AddTimeout(TimeSpan.FromMilliseconds(attemptTimeout)));
 
                     options.UseAspNetCore();
                 });
 
-            services.AddPolicy(authPolicies);
+            services.AddPolicy(authPolicies, configuration, authScopeSection);
 
             return services;
         }
 
-        private static IServiceCollection AddPolicy(this IServiceCollection services, string[] policies = null)
+        private static IServiceCollection AddPolicy(
+            this IServiceCollection services,
+            string[]? policies = null,
+            IConfiguration? configuration = null,
+            string authScopeSection = "Identity")
         {
-            var walletWriteScope = GetSetting("IDENTITY_SERVICE_CLIENT_WRITE_SCOPE");
-            var walletReadScope = GetSetting("IDENTITY_SERVICE_CLIENT_READ_SCOPE");
+            ArgumentException.ThrowIfNullOrWhiteSpace(authScopeSection);
+
+            var selectedPolicies = policies?.ToHashSet(StringComparer.Ordinal)
+                ?? new HashSet<string>(StringComparer.Ordinal);
+            var writeScopeKey = $"{authScopeSection}:WriteScope";
+            var readScopeKey = $"{authScopeSection}:ReadScope";
+            var apiWriteScope = GetSetting(writeScopeKey, configuration);
+            var apiReadScope = GetSetting(readScopeKey, configuration);
+
+            EnsureScopeConfigured(
+                selectedPolicies.Contains(AuthPolicies.ClientWriteAccess)
+                || selectedPolicies.Contains(AuthPolicies.ClientFullAccess),
+                writeScopeKey,
+                apiWriteScope);
+            EnsureScopeConfigured(
+                selectedPolicies.Contains(AuthPolicies.ClientReadAccess)
+                || selectedPolicies.Contains(AuthPolicies.ClientFullAccess),
+                readScopeKey,
+                apiReadScope);
+
             var rolePolicies = new Dictionary<string, string[]>
             {
-                { 
-                    AuthPolicies.UserAdminAccess, 
-                    ["SysAdmin"] 
+                {
+                    AuthPolicies.UserAdminAccess,
+                    ["SysAdmin"]
                 },
             };
             var scopePolicies = new Dictionary<string, string[][]>
             {
-                { 
+                {
                     AuthPolicies.ClientWriteAccess,
                     [
-                        [OpenIddictConstants.Claims.Scope, walletWriteScope]
+                        [OpenIddictConstants.Claims.Scope, apiWriteScope]
                     ]
                 },
                 {
                     AuthPolicies.ClientReadAccess,
-                    [ 
-                        [OpenIddictConstants.Claims.Scope, walletReadScope]
+                    [
+                        [OpenIddictConstants.Claims.Scope, apiReadScope]
                     ]
                 },
                 {
                     AuthPolicies.ClientFullAccess,
                     [
-                        [OpenIddictConstants.Claims.Scope, walletWriteScope],
-                        [OpenIddictConstants.Claims.Scope, walletReadScope]
+                        [OpenIddictConstants.Claims.Scope, apiWriteScope],
+                        [OpenIddictConstants.Claims.Scope, apiReadScope]
                     ]
                 }
             };
             var clientIdPolicies = new Dictionary<string, string[][]>
             {
-                { 
-                    AuthPolicies.FromReactApp, 
+                {
+                    AuthPolicies.FromReactApp,
                     [
                         [OpenIddictConstants.Claims.ClientId, "react"]
-                    ] 
+                    ]
                 },
             };
 
 
-            if (policies?.Count() > 0)
+            // Bare [Authorize] and RequireAuthorization() endpoints still need the
+            // default authorization services even when no named policies were inferred.
+            services.AddAuthorization(options =>
             {
-                services.AddAuthorization(options =>
+                foreach (var scope in scopePolicies.Where(e => policies?.Contains(e.Key) == true))
                 {
-                    foreach (var scope in scopePolicies?.Where(e => policies.Contains(e.Key)))
+                    options.AddPolicy(scope.Key, policy =>
                     {
-                        options.AddPolicy(scope.Key, policy =>
+                        policy.RequireAuthenticatedUser();
+
+                        foreach (var key in scope.Value)
                         {
-                            policy.RequireAuthenticatedUser();
+                            policy.RequireClaim(key[0], key[1]);
+                        }
+                    });
+                }
 
-                            foreach (var key in scope.Value)
-                            {
-                                policy.RequireClaim(key[0], key[1]);
-                            }
-                        });
-                    }
-
-                    foreach (var scope in clientIdPolicies?.Where(e => policies.Contains(e.Key)))
+                foreach (var scope in clientIdPolicies.Where(e => policies?.Contains(e.Key) == true))
+                {
+                    options.AddPolicy(scope.Key, policy =>
                     {
-                        options.AddPolicy(scope.Key, policy =>
+                        policy.RequireAuthenticatedUser();
+
+                        foreach (var key in scope.Value)
                         {
-                            policy.RequireAuthenticatedUser();
+                            policy.RequireClaim(key[0], key[1]);
+                        }
+                    });
+                }
 
-                            foreach (var key in scope.Value)
-                            {
-                                policy.RequireClaim(key[0], key[1]);
-                            }
-                        });
-                    }
-
-                    foreach (var scope in rolePolicies?.Where(e => policies.Contains(e.Key)))
+                foreach (var scope in rolePolicies.Where(e => policies?.Contains(e.Key) == true))
+                {
+                    options.AddPolicy(scope.Key, policy =>
                     {
-                        options.AddPolicy(scope.Key, policy =>
-                        {
-                            policy.RequireAuthenticatedUser();
+                        policy.RequireAuthenticatedUser();
 
-                            foreach (var key in scope.Value)
-                            {
-                                policy.RequireRole(key);
-                            }
-                        });
-                    }
-                });
-            }
+                        foreach (var key in scope.Value)
+                        {
+                            policy.RequireRole(key);
+                        }
+                    });
+                }
+            });
 
             return services;
         }
 
-        private static string GetSetting(string setting) => Environment.GetEnvironmentVariable(setting);
-    }
+        private static void EnsureScopeConfigured(bool required, string key, string? value)
+        {
+            if (required && string.IsNullOrWhiteSpace(value))
+            {
+                throw new InvalidOperationException(
+                    $"Authorization policy configuration requires a non-empty '{key}' value.");
+            }
+        }
 
-    public static class AuthPolicies
-    {
-        public const string UserAdminAccess = "UserAdminAccess";
-        public const string ClientWriteAccess = "ClientWriteAccess";
-        public const string ClientReadAccess = "ClientReadAccess";
-        public const string ClientFullAccess = "ClientFullAccess";
-        public const string FromReactApp = "FromReactApp";
+        private static string GetSetting(string setting, IConfiguration? configuration) =>
+            configuration?[setting] ?? string.Empty;
+
+        private static int GetBoundedMillisecondsSetting(
+            IConfiguration? configuration,
+            string key,
+            int defaultValue,
+            int minimum,
+            int maximum)
+        {
+            var configured = configuration?[key];
+            if (string.IsNullOrWhiteSpace(configured))
+                return defaultValue;
+            if (!int.TryParse(configured, NumberStyles.None, CultureInfo.InvariantCulture, out var value)
+                || value < minimum
+                || value > maximum)
+            {
+                throw new InvalidOperationException(
+                    $"{key} must be an integer between {minimum} and {maximum} milliseconds.");
+            }
+
+            return value;
+        }
+
+        private static string[] NormalizeCorsOrigins(IEnumerable<string>? configuredOrigins)
+        {
+            const int maxOrigins = 64;
+            const int maxOriginLength = 512;
+
+            var origins = (configuredOrigins ?? Array.Empty<string>())
+                .Where(origin => !string.IsNullOrWhiteSpace(origin))
+                .ToArray();
+
+            if (origins.Length > maxOrigins)
+            {
+                throw new InvalidOperationException(
+                    $"CORS configuration contains {origins.Length} origins; at most {maxOrigins} are allowed.");
+            }
+
+            var normalized = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var configuredOrigin in origins)
+            {
+                var origin = configuredOrigin.Trim();
+                if (origin.Length > maxOriginLength)
+                    throw new InvalidOperationException("A configured CORS origin exceeds the maximum length.");
+
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+                    || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+                    || !string.IsNullOrEmpty(uri.UserInfo)
+                    || uri.AbsolutePath != "/"
+                    || !string.IsNullOrEmpty(uri.Query)
+                    || !string.IsNullOrEmpty(uri.Fragment))
+                {
+                    throw new InvalidOperationException(
+                        $"CORS origin '{origin}' must be an absolute HTTP(S) origin without credentials, path, query, or fragment.");
+                }
+
+                normalized.Add(uri.GetLeftPart(UriPartial.Authority));
+            }
+
+            return normalized.ToArray();
+        }
     }
 
     public class Cors

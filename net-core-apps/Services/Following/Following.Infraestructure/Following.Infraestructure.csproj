@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>Following.Infra</RootNamespace>
   </PropertyGroup>
@@ -20,29 +19,28 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.7">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microting.EntityFrameworkCore.MySql" Version="10.0.7" />
-    <PackageReference Include="Mediator.Abstractions" Version="2.1.7" />
-    <PackageReference Include="Mediator.SourceGenerator" Version="2.1.7">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerContracts\MessageBrokerContracts.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerCore\MessageBrokerCore.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Brokers\MessageBrokerExtensions\MessageBrokerExtensions.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Operations\Observability\Observability.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Providers\CategoriesProvider\CategoriesProvider.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\StarterEntities\StarterEntities.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\DomainEventing\DomainEventing.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SqlKit\MariaDbConfiguration\MariaDbConfiguration.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Providers\IdentityProvider\IdentityProvider.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\Providers\NotificationProvider\NotificationProvider.csproj" />
     <ProjectReference Include="..\Following.Application\Following.Application.csproj" />
     <ProjectReference Include="..\Following.Domain\Following.Domain.csproj" />
   </ItemGroup>

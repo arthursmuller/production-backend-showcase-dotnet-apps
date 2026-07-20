@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Following.Api\Following.Api.csproj" />
+    <ProjectReference Include="..\..\Following.Application\Following.Application.csproj" />
+    <ProjectReference Include="..\..\Following.Domain\Following.Domain.csproj" />
+    <ProjectReference Include="..\..\Following.Infraestructure\Following.Infraestructure.csproj" />
+    <ProjectReference Include="..\..\..\..\BuildingBlocks\Providers\FollowingProvider\FollowingProvider.csproj" />
+  </ItemGroup>
+</Project>

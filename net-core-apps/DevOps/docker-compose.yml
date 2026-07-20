@@ -1,0 +1,98 @@
+services:
+  mariadbData:
+    container_name: mariadbData
+    image: mariadb:10.6.27@sha256:114d40be36852d0a019afd8458f7e1cc63fd300403b115b1f32e31130d5f671b
+
+  rabbitmq:
+    container_name: rabbitMQ
+    image: inspacy/rabbitmq-delayed:4.2.4-4.2.0
+    build:
+      context: ..
+      dockerfile: DevOps/Dockerfiles/RabbitMq.Dockerfile
+    hostname: rabbitmq
+
+  redis:
+    container_name: redis
+    image: redis:8.4.4-alpine@sha256:43092204f39bfd5500a4ee6d9a73105ba42157a6af8a80e6a51357400a46984b
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lfu
+
+  minio:
+    container_name: minio
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: server /data --console-address ":9001"
+
+  comment.api:
+    container_name: comment.API
+    image: ${DOCKER_REGISTRY-arthursmuller}/inspacy-comment-api:${PLATFORM:-linux}-${TAG:-latest}
+    restart: on-failure:30
+    build:
+      context: ..
+      dockerfile: DevOps/Dockerfiles/Comment.Api.Dockerfile
+    depends_on:
+      mariadbData:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  feed.api:
+    container_name: feed.API
+    image: ${DOCKER_REGISTRY-arthursmuller}/inspacy-feed-api:${PLATFORM:-linux}-${TAG:-latest}
+    restart: on-failure:30
+    build:
+      context: ..
+      dockerfile: DevOps/Dockerfiles/Feed.Api.Dockerfile
+    depends_on:
+      mariadbData:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  following.api:
+    container_name: following.API
+    image: ${DOCKER_REGISTRY-arthursmuller}/inspacy-following-api:${PLATFORM:-linux}-${TAG:-latest}
+    restart: on-failure:30
+    build:
+      context: ..
+      dockerfile: DevOps/Dockerfiles/Following.Api.Dockerfile
+    depends_on:
+      mariadbData:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  interaction.api:
+    container_name: interaction.API
+    image: ${DOCKER_REGISTRY-arthursmuller}/inspacy-interaction-api:${PLATFORM:-linux}-${TAG:-latest}
+    restart: on-failure:30
+    build:
+      context: ..
+      dockerfile: DevOps/Dockerfiles/Interaction.Api.Dockerfile
+    depends_on:
+      mariadbData:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  moderation.api:
+    container_name: moderation.API
+    image: ${DOCKER_REGISTRY-arthursmuller}/inspacy-moderation-api:${PLATFORM:-linux}-${TAG:-latest}
+    restart: on-failure:30
+    build:
+      context: ..
+      dockerfile: DevOps/Dockerfiles/Moderation.Api.Dockerfile
+    depends_on:
+      mariadbData:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy

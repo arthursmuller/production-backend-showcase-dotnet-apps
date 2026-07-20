@@ -1,0 +1,71 @@
+{
+  "$schema": "performance-profiles.schema.json",
+  "operations": {
+    "liveness": {
+      "path": "/health/live",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "readiness": {
+      "path": "/health/ready",
+      "method": "GET",
+      "requiresAuthentication": false
+    },
+    "relationship": {
+      "path": "/api/followings/relationships/1",
+      "method": "GET",
+      "requiresAuthentication": true
+    },
+    "create-follow": {
+      "path": "/api/followings/user/follow",
+      "method": "POST",
+      "body": "{\"userId\": {sequence1}}",
+      "contentType": "application/json",
+      "requiresAuthentication": true
+    }
+  },
+  "profiles": {
+    "smoke": {
+      "enabled": true,
+      "arrivalModel": "paced-fixed-rate",
+      "durationSeconds": 5,
+      "recoverySeconds": 0,
+      "startConcurrency": 1,
+      "concurrency": 1,
+      "targetRps": 1,
+      "requestTimeoutSeconds": 10,
+      "mix": [
+        { "operation": "liveness", "weight": 4 },
+        { "operation": "readiness", "weight": 1 }
+      ]
+    },
+    "baseline": {
+      "enabled": false,
+      "arrivalModel": "paced-fixed-rate",
+      "durationSeconds": null,
+      "recoverySeconds": 0,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "relationship", "weight": 4 },
+        { "operation": "create-follow", "weight": 1 }
+      ]
+    },
+    "representative": {
+      "enabled": false,
+      "arrivalModel": "paced-fixed-rate",
+      "durationSeconds": null,
+      "recoverySeconds": 0,
+      "startConcurrency": null,
+      "concurrency": null,
+      "targetRps": null,
+      "requestTimeoutSeconds": null,
+      "mix": [
+        { "operation": "relationship", "weight": 4 },
+        { "operation": "create-follow", "weight": 1 }
+      ]
+    }
+  }
+}

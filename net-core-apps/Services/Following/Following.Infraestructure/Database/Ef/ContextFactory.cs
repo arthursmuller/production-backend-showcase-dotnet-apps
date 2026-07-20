@@ -1,43 +1,21 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.IO;
+using Inspacy.Data.MariaDb;
 
 namespace Following.Infra.Persistence
 {
-    public class FollowingContextactory : IDesignTimeDbContextFactory<FollowingContext>
+    /// <summary>Creates a Following context exclusively for EF Core design-time tooling.</summary>
+    /// <remarks>
+    /// Design-time commands run outside the API host and its secret-aware configuration
+    /// pipeline. The shared design-time helper owns the documented environment-read
+    /// exception; runtime database configuration continues to flow through IConfiguration.
+    /// </remarks>
+    public class FollowingContextFactory : IDesignTimeDbContextFactory<FollowingContext>
     {
-        private static string _connectionString;
-
-        public FollowingContext CreateDbContext()
-            => new FollowingContext(null, null);
-
         public FollowingContext CreateDbContext(string[] args)
         {
-            if (string.IsNullOrEmpty(_connectionString))
-            {
-                LoadConnectionString();
-            }
-
-            var builder = new DbContextOptionsBuilder<FollowingContext>();
-
-            var version = new MariaDbServerVersion(new Version(10, 6, 11));
-            builder.UseMySql(_connectionString, version)
-                    .EnableSensitiveDataLogging();
-
-            return new FollowingContext(builder.Options, null);
-            // mediator is null for design-time / migration scenarios — no events are dispatched
-        }
-
-        private static void LoadConnectionString()
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath($"{Path.Combine(Directory.GetCurrentDirectory())}")
-                .AddJsonFile("appsettings.json", optional: false);
-
-            var configuration = builder.Build();
-            _connectionString = configuration.GetConnectionString("SQL_CONNECTION_STRING");
+            var options = MariaDbDesignTimeOptions.Create<FollowingContext>();
+            return new FollowingContext(options);
         }
     }
 }

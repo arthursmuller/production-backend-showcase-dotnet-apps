@@ -13,7 +13,7 @@ namespace Comment.Infra.Migrations
 {
     [DbContext(typeof(CommentContext))]
     [Migration("20260527011820_first")]
-    partial class first
+    partial class First
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -1,13 +1,7 @@
-﻿using System;
-using System.Linq;
-using System.Data;
-using System.Threading;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Following.Domain.AggregatesModel;
-using DomainEventing;
-using Mediator;
+using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace Following.Infra.Persistence
 {
@@ -19,45 +13,49 @@ namespace Following.Infra.Persistence
         public DbSet<CategoryFollow> CategoryFollows { get; set; }
         public DbSet<UserRelationAnalytics> UserRelationsAnalytics { get; set; }
         public DbSet<FriendshipSubscriptionFeature> FriendsSubscriptionsFeature { get; set; }
+        public DbSet<RelationshipEventStream> RelationshipEventStreams { get; set; }
+        public DbSet<UserBlock> UserBlocks { get; set; }
+        public DbSet<FollowingUserErasure> UserErasures { get; set; }
 
-        private readonly IMediator _mediator;
-
-        public FollowingContext(DbContextOptions<FollowingContext> options, IMediator mediator) : base(options)
+        public FollowingContext(DbContextOptions<FollowingContext> options)
+            : base(options)
         {
-            _mediator = mediator;
         }
 
-        /// <summary>
-        /// Dispatches all pending domain events from tracked aggregates
-        /// <em>before</em> persisting to the database so that side effects
-        /// run inside the same EF Core transaction / DbContext scope.
-        /// (eShop deferred domain-events pattern)
-        /// </summary>
-        public async Task<bool> SaveEntitiesAsync(CancellationToken cancellationToken = default)
-        {
-            await _mediator.DispatchDomainEventsAsync(this);
-            await base.SaveChangesAsync(cancellationToken);
-            return true;
-        }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            applyConfigurationsFromAssembly(modelBuilder);
-
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(FollowingContext).Assembly);
+            modelBuilder.AddInboxStateEntity();
+            modelBuilder.AddOutboxMessageEntity();
+            modelBuilder.AddOutboxStateEntity();
+            ConfigureErasureFilters(modelBuilder);
             base.OnModelCreating(modelBuilder);
         }
-        private void applyConfigurationsFromAssembly(ModelBuilder modelBuilder)
-        {
-            var configurationTypes = Assembly.GetExecutingAssembly()
-                    .GetTypes()
-                    .Where(type => type.GetInterfaces()
-                        .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEntityTypeConfiguration<>)))
-                    .ToList();
 
-            foreach (var configurationType in configurationTypes)
-            {
-                dynamic configurationInstance = Activator.CreateInstance(configurationType);
-                modelBuilder.ApplyConfiguration(configurationInstance);
-            }
+        private void ConfigureErasureFilters(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Follow>().HasQueryFilter(item =>
+                !UserErasures.Any(erasure => erasure.UserId == item.FollowerUserId)
+                && !UserErasures.Any(erasure => erasure.UserId == item.FollowedUserId));
+            modelBuilder.Entity<Friendship>().HasQueryFilter(item =>
+                !UserErasures.Any(erasure => erasure.UserId == item.UserId)
+                && !UserErasures.Any(erasure => erasure.UserId == item.FriendUserId));
+            modelBuilder.Entity<FriendRequest>().HasQueryFilter(item =>
+                !UserErasures.Any(erasure => erasure.UserId == item.SenderUserId)
+                && !UserErasures.Any(erasure => erasure.UserId == item.RecipientUserId));
+            modelBuilder.Entity<UserBlock>().HasQueryFilter(item =>
+                !UserErasures.Any(erasure => erasure.UserId == item.BlockerUserId)
+                && !UserErasures.Any(erasure => erasure.UserId == item.BlockedUserId));
+            modelBuilder.Entity<FriendshipSubscriptionFeature>().HasQueryFilter(item =>
+                !UserErasures.Any(erasure => erasure.UserId == item.OwnerId)
+                && !UserErasures.Any(erasure => erasure.UserId == item.RequesterId));
+            modelBuilder.Entity<CategoryFollow>().HasQueryFilter(item =>
+                !UserErasures.Any(erasure => erasure.UserId == item.UserId));
+            modelBuilder.Entity<UserRelationAnalytics>().HasQueryFilter(item =>
+                !UserErasures.Any(erasure => erasure.UserId == item.Id));
+            modelBuilder.Entity<RelationshipEventStream>().HasQueryFilter(item =>
+                !UserErasures.Any(erasure => erasure.UserId == item.OwnerUserId)
+                && !UserErasures.Any(erasure => erasure.UserId == item.ViewerUserId));
         }
     }
 }

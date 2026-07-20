@@ -1,0 +1,36 @@
+{{- if .Values.service.enabled }}
+{{- range $role := list "api" "consumer" "job" }}
+{{- $settings := index $.Values.roles $role }}
+{{- if and $settings.enabled $settings.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "inspacy-service.roleName" (dict "root" $ "role" $role) }}
+  labels:
+{{ include "inspacy-service.commonLabels" $ | indent 4 }}
+    inspacy.io/runtime-role: {{ $role }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "inspacy-service.roleName" (dict "root" $ "role" $role) }}
+  minReplicas: {{ $settings.autoscaling.minReplicas }}
+  maxReplicas: {{ $settings.autoscaling.maxReplicas }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: {{ $settings.autoscaling.scaleUpStabilizationSeconds }}
+      selectPolicy: Max
+      policies:
+        - { type: Percent, value: 100, periodSeconds: 60 }
+        - { type: Pods, value: 4, periodSeconds: 60 }
+    scaleDown:
+      stabilizationWindowSeconds: {{ $settings.autoscaling.scaleDownStabilizationSeconds }}
+      selectPolicy: Max
+      policies:
+        - { type: Percent, value: 25, periodSeconds: 60 }
+  metrics:
+{{ toYaml $settings.autoscaling.metrics | indent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}

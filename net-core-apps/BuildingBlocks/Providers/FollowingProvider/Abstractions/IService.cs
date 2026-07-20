@@ -1,4 +1,4 @@
-﻿
+
 namespace FollowingProvider.Abstractions
 {
     public interface IFollowingService

@@ -1,0 +1,2553 @@
+{
+  "formatVersion": 2,
+  "sourceEvidenceCommit": "f969b7363bbac5787625ed0875264abe6a2c415c",
+  "regenerationCommand": "pwsh -File Tests/ApiContract.Tests/Baselines/regenerate-http-openapi-baseline.ps1",
+  "operationCount": 58,
+  "operationStatusHashSha256": "930951bbd53f6582a0066f18a1dc154804dce709ee1b3ebea6c99fea492dfabf",
+  "componentSchemasHashSha256": "8c82bd18878f3ab3f49892677916feb91e277f6d0d0a51ec0b66a45a153973ee",
+  "capturedShapes": [
+    {
+      "role": "comment-create",
+      "method": "POST",
+      "path": "/api/comments",
+      "responses": [
+        {
+          "statusCode": "201",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "413",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "c6470e3c4cea67ccd3b6f2c39aed545e7796225663471a83de6765c5522ee35c",
+      "responseShapeHashSha256": "938f7ae4eb61561d2b40ff8a6f92320c6c9899f82ab9782fecbbb8300770b43a"
+    },
+    {
+      "role": "comment-list-cursor",
+      "method": "GET",
+      "path": "/api/comments/list",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "503",
+          "contentTypes": [
+            "application/json"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "138c89a3740f64f08e63fa9cea285443aeb79e94c7ebf29b86ee6ecdb12bc5d0",
+      "responseShapeHashSha256": "d52ce441ecd7cd2c8b86a601804bb0441b47c130a28679c9e20027412ab24a18"
+    },
+    {
+      "role": "feed-list-cursor",
+      "method": "GET",
+      "path": "/api/feed/user/auth/items",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "503",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "c0c53d177d1d429d373384e2304dced0132c41dc4f3e2dbff53808b314480b7c",
+      "responseShapeHashSha256": "bb936cbdb94ef5917a0b4a2f6d36cff446d971f5679bf59469e17e2b69dd3092"
+    },
+    {
+      "role": "friend-request-create",
+      "method": "POST",
+      "path": "/api/followings/friend/request",
+      "responses": [
+        {
+          "statusCode": "201",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "8808ef9414de629adcba89c9923e029b44e0fb0066064526c81a9f1dcdc418d9",
+      "responseShapeHashSha256": "2d0c8eef384f8e3f5fe0f5fda03d505d6646e3f32e9fbd7d4b9c6076fa7bb770"
+    },
+    {
+      "role": "friend-request-delete",
+      "method": "DELETE",
+      "path": "/api/followings/friend/request/{id}",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "c9feaac1fc751d5167ad6f1d7d9b65885f19bf92ea3b15198a0a6059fd0909ff",
+      "responseShapeHashSha256": "68bfab5c919af87ad2b486e9cde7f22d37ed4681d0f278ce404eea13c686790c"
+    },
+    {
+      "role": "interaction-authority-export",
+      "method": "GET",
+      "path": "/internal/interaction/authoritative-state",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "8b4092d1d690b9f4169a3c992b79c7399f23d52875aa3e4b944ed1f6ae270b8c",
+      "responseShapeHashSha256": "54e1d69a7dcba42f7658c934f1525261fb789923ed1e4e646a22712bc557c4a4"
+    },
+    {
+      "role": "interaction-reaction",
+      "method": "PUT",
+      "path": "/api/resources/{type}/{id}/reaction",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "9e707d498420284705a3d9b2f5a7084898f09581939a0653c8a13d40e78280de",
+      "responseShapeHashSha256": "605d018a4d819ffb5b3907e2150986167b3186a68a33084304ff375ae622675e"
+    },
+    {
+      "role": "moderation-report-create",
+      "method": "POST",
+      "path": "/api/moderation/reports",
+      "responses": [
+        {
+          "statusCode": "201",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "fe8c005cd12c103ddff57ab2915fdca0dee9b05e171bb6b412ad5bd4d41dd11c",
+      "responseShapeHashSha256": "e410c3fd8fb745ba82bd87e8a854960eec3610469c574ae0ef7a9d477717c41b"
+    },
+    {
+      "role": "relationship-ids-cursor",
+      "method": "GET",
+      "path": "/api/relations/users/{id}/relation-ids",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "7710815e45e04c5419718d2455623297143000329d18a1678d85b191e6ef2a81",
+      "responseShapeHashSha256": "fb9da0947b9b3045f096003e4711054a8889fde7784b0821981ffa2d400b7947"
+    }
+  ],
+  "operations": [
+    {
+      "method": "PATCH",
+      "path": "/api/comments",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "413",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "0b6c7989227ee801dddc8841846391b2460f12d6ec8f0f0cacb1248f9d583d34",
+      "responseShapeHashSha256": "53e0281f41ea20871283267abc487922144e25a86ca122215740729338c9df98"
+    },
+    {
+      "method": "POST",
+      "path": "/api/comments",
+      "responses": [
+        {
+          "statusCode": "201",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "413",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json",
+            "text/json",
+            "text/plain"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "c6470e3c4cea67ccd3b6f2c39aed545e7796225663471a83de6765c5522ee35c",
+      "responseShapeHashSha256": "938f7ae4eb61561d2b40ff8a6f92320c6c9899f82ab9782fecbbb8300770b43a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/comments/list",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "503",
+          "contentTypes": [
+            "application/json"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "138c89a3740f64f08e63fa9cea285443aeb79e94c7ebf29b86ee6ecdb12bc5d0",
+      "responseShapeHashSha256": "d52ce441ecd7cd2c8b86a601804bb0441b47c130a28679c9e20027412ab24a18"
+    },
+    {
+      "method": "GET",
+      "path": "/api/comments/owner/list",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "503",
+          "contentTypes": [
+            "application/json"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "ffca9db54756942285879428e92dee4d8cd9f86e3cf3847bfd97878b7b38cfd1",
+      "responseShapeHashSha256": "c8591f058f353e6e41f4c2cc7ae621170ab9d2e31c17c2ceead87de62784f951"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/comments/{id}",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "e4fcb3176e7af5c76524325ff766eb4cf67d43a964bb9788c3119269f54d1801",
+      "responseShapeHashSha256": "37c175146841880a7661c989f36f8f911cf58886df83e7d132f5e183b8b7102f"
+    },
+    {
+      "method": "GET",
+      "path": "/api/comments/{id}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "503",
+          "contentTypes": [
+            "application/json"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "b67a1ab2b30a4629a388d3352707de7d1170eab9909193617254649da94dd15c",
+      "responseShapeHashSha256": "09fccfbe231967a35038bbf9308d68b238bf3a6efbf2073ef2331a29e93d49bf"
+    },
+    {
+      "method": "GET",
+      "path": "/api/comments/{id}/media/{mediaItemId}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "429",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "503",
+          "contentTypes": [
+            "application/json"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "9dc382cbbb4627fc304a5d384d4a0a4447afb1551ccf7236c3736a2d22e5b3bf",
+      "responseShapeHashSha256": "8775701fcc0a2eea0623bf96f1cf43dc8bece8325d60437c1329ef3f4ce11c0a"
+    },
+    {
+      "method": "GET",
+      "path": "/api/feed/user/auth/items",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "503",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "c0c53d177d1d429d373384e2304dced0132c41dc4f3e2dbff53808b314480b7c",
+      "responseShapeHashSha256": "bb936cbdb94ef5917a0b4a2f6d36cff446d971f5679bf59469e17e2b69dd3092"
+    },
+    {
+      "method": "POST",
+      "path": "/api/feed/user/auth/seen",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "500",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "503",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "a8fbdb21bc877b923c89c688debdbeb48c8789add0cba52dcbcfae5b233088e6",
+      "responseShapeHashSha256": "53c1997a85dd766f490197e617e446dbd3f25dcb00c372ef07ef7bcfda998b02"
+    },
+    {
+      "method": "GET",
+      "path": "/api/followings/blocks",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "087dfb5f5243a6fa1fd34c78f7c83bec6274d75acf3f1765763ef4e59a43801d",
+      "responseShapeHashSha256": "b1e71140200003021fa41ae4d34bf9c00f778faf29276a2f0b04e34a468ca8a0"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/followings/blocks/{id}",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "9115b23ef081ccd4ccfc92c72237a992bdfc9429c927f7ee01545d45bd157231",
+      "responseShapeHashSha256": "8f7c1603d3c6cfa4cad640861a88da67d41a8934f4d9884c2dff1f10e9b8a212"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/followings/blocks/{id}",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "3f9923f487b6bc60e5438729c283ea019e0adf3029edb9e47ef3f6d360b86410",
+      "responseShapeHashSha256": "a8819c5734bb7783bdc7529b977e9137e654a9e5131902ccdd7695be8cf0959d"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/followings/category/follow",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "dd61330a9b92fb02d8fa5a81394aabf6b04c25c89283f6909dc7c90579eb8192",
+      "responseShapeHashSha256": "68bfab5c919af87ad2b486e9cde7f22d37ed4681d0f278ce404eea13c686790c"
+    },
+    {
+      "method": "GET",
+      "path": "/api/followings/category/follow",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "d1f2b5c669cf20879392a06580a9d190450e0745d3582f0f707aee791db68dde",
+      "responseShapeHashSha256": "616978b2148b53e33ddeb056eb6d23995d9a7bf70ec8437a233a0b6532a9b1e1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/followings/category/follow",
+      "responses": [
+        {
+          "statusCode": "201",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "3527f696d5cac31aed765ebc87727bcb14c9e627d69e6d3f9942605919ee254d",
+      "responseShapeHashSha256": "2d0c8eef384f8e3f5fe0f5fda03d505d6646e3f32e9fbd7d4b9c6076fa7bb770"
+    },
+    {
+      "method": "POST",
+      "path": "/api/followings/category/follow/list",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "db3f381306a9d5409d405770cb0251dd4b1a0b718d4cfcb52b4dc6daf89a54dd",
+      "responseShapeHashSha256": "c7a46fdf83a9a685e34dd626dad20ad22a9cb19d7fe4968a94c6cdc3348ffd15"
+    },
+    {
+      "method": "POST",
+      "path": "/api/followings/friend/list",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "ea08a8b6ccc07422c60682637279d26127a4af3bdab436bc4021a80b95bcd777",
+      "responseShapeHashSha256": "98b87df9b8516db5c037a47aab897bfd57a4cd9b6a98c83cd6e80f32be4cc5a0"
+    },
+    {
+      "method": "POST",
+      "path": "/api/followings/friend/request",
+      "responses": [
+        {
+          "statusCode": "201",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "8808ef9414de629adcba89c9923e029b44e0fb0066064526c81a9f1dcdc418d9",
+      "responseShapeHashSha256": "2d0c8eef384f8e3f5fe0f5fda03d505d6646e3f32e9fbd7d4b9c6076fa7bb770"
+    },
+    {
+      "method": "POST",
+      "path": "/api/followings/friend/request/approve",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "6bf2ffe579f38bc3ccc095ef4aa091c1f796250fdb3679188f8b67b6b12b8bb4",
+      "responseShapeHashSha256": "e5195806275adcff7df58e43c1da90134ba4c17afad195357a63eb5b8fb443bd"
+    },
+    {
+      "method": "POST",
+      "path": "/api/followings/friend/request/list",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "75f1a881a606ed2af8d3ba1f18c8a26ada77b8149a8a5a46bb3803353460122d",
+      "responseShapeHashSha256": "32203d5ee0353c8b70b227a605bf4ff018afb2de7e22d440ceecc1562f9fc9eb"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/followings/friend/request/{id}",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "c9feaac1fc751d5167ad6f1d7d9b65885f19bf92ea3b15198a0a6059fd0909ff",
+      "responseShapeHashSha256": "68bfab5c919af87ad2b486e9cde7f22d37ed4681d0f278ce404eea13c686790c"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/followings/friend/{id}",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "64731f3354cd40d9cf81bd2c050c874022d466c3521301e78502215ab6b1ed73",
+      "responseShapeHashSha256": "68bfab5c919af87ad2b486e9cde7f22d37ed4681d0f278ce404eea13c686790c"
+    },
+    {
+      "method": "GET",
+      "path": "/api/followings/relationships/{id}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "0cbdd94668e44d8ceaf0e3ec3231b5a68f746160f885fe0da09fd34994fa63e3",
+      "responseShapeHashSha256": "0636103cf24291c0ad29a47747fa66f0074d4831c8fa392ec8b438d5369eabf5"
+    },
+    {
+      "method": "POST",
+      "path": "/api/followings/user/follow",
+      "responses": [
+        {
+          "statusCode": "201",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "2516fdbc2e8319f16f856555c4a4f88ea473f033de4836a87c1b1212b046f2a5",
+      "responseShapeHashSha256": "2d0c8eef384f8e3f5fe0f5fda03d505d6646e3f32e9fbd7d4b9c6076fa7bb770"
+    },
+    {
+      "method": "POST",
+      "path": "/api/followings/user/follow/list",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "c281b73f771e837ece24f022d38ffdbbc88bd543170c6a991448a589e59c9b49",
+      "responseShapeHashSha256": "752c68d76ec33ba2f1b6e221079561c1ad1bb21b8ef1519685633d515de8ea29"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/followings/user/follow/{id}",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "756f3ed24f3192e6150690fbf0c35915c8e68fe849e3a6451c1317f4ee4dd42e",
+      "responseShapeHashSha256": "68bfab5c919af87ad2b486e9cde7f22d37ed4681d0f278ce404eea13c686790c"
+    },
+    {
+      "method": "POST",
+      "path": "/api/interactions/status:batch",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "e4b9f262bf0335957706c811982e5b55faf049308b0fe9723b464040d748e160",
+      "responseShapeHashSha256": "67ba09ae8d0a19e6db04a83fd0beb84b01d64b922e89c4ac9d62e725d7ede78d"
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/relationships/snapshot",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "6695a018cf5b85afdbc5132eff999c12e7b21b80f0bac9e73eedbe9ed3d02320",
+      "responseShapeHashSha256": "4e166637bb9821602440b9ec496173414bf098beeae186a2ea233995d6fac9b9"
+    },
+    {
+      "method": "POST",
+      "path": "/api/moderation/reports",
+      "responses": [
+        {
+          "statusCode": "201",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "fe8c005cd12c103ddff57ab2915fdca0dee9b05e171bb6b412ad5bd4d41dd11c",
+      "responseShapeHashSha256": "e410c3fd8fb745ba82bd87e8a854960eec3610469c574ae0ef7a9d477717c41b"
+    },
+    {
+      "method": "POST",
+      "path": "/api/moderation/reports/{reportId}/appeal",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "cdfcc4fc885b228da0866b06d5422781e30e5c4da6072dafdb5596e4d8e55e01",
+      "responseShapeHashSha256": "5efdaf2332b743c389115cfb036bcc3739970cbb5a7aa4bdf07e504cde2734dc"
+    },
+    {
+      "method": "GET",
+      "path": "/api/moderation/reports/{reportId}/receipt",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "0e7067108f5ef2522503620a1d24316bfb5b4940baa8413f08f6005168cc0155",
+      "responseShapeHashSha256": "8f1580332aaabe3a8286d095b4d6cf6f1ef777413a4e7d75032d227ce67e3e59"
+    },
+    {
+      "method": "GET",
+      "path": "/api/moderation/reports/{reportId}/status",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "77e2f7476ae983d8988e8f497750f036d236ac87d1f9748d51e3e2a01c58260b",
+      "responseShapeHashSha256": "1bd4c577b2d574a2138140b03941a11191e209e3b3873731152b42cfe2559720"
+    },
+    {
+      "method": "GET",
+      "path": "/api/relations/users/{id}/relation-ids",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "7710815e45e04c5419718d2455623297143000329d18a1678d85b191e6ef2a81",
+      "responseShapeHashSha256": "fb9da0947b9b3045f096003e4711054a8889fde7784b0821981ffa2d400b7947"
+    },
+    {
+      "method": "GET",
+      "path": "/api/resources/{type}/{id}/engagement",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "7148c1abb18cc0de1b9325d86edc49ad23c4dc168fb633a20b4b4b16c11143bc",
+      "responseShapeHashSha256": "b30beb5fafdabe83b1992cd03d1f503ca9ce2b8a9ef7eb20bee0463b2ba15cb8"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/resources/{type}/{id}/rating",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "312da1d4b9c02ce674c18acaaba0b7d380aa2f11a96f22c653e7be6db07a7e65",
+      "responseShapeHashSha256": "85b7392df7ad2897adbde540541f5a0c80a1b89a787359622ea4aa4701cda678"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/resources/{type}/{id}/rating",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "f09078f941458bdca308e3f1e7f8d6453cfc224ec8e7d64e5d83cc480de9a0ee",
+      "responseShapeHashSha256": "605d018a4d819ffb5b3907e2150986167b3186a68a33084304ff375ae622675e"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/resources/{type}/{id}/reaction",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "a0dc8838971830a9ff19c7b865146072568ee96d6f97fa00f368c334ea1f86b3",
+      "responseShapeHashSha256": "85b7392df7ad2897adbde540541f5a0c80a1b89a787359622ea4aa4701cda678"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/resources/{type}/{id}/reaction",
+      "responses": [
+        {
+          "statusCode": "204",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "9e707d498420284705a3d9b2f5a7084898f09581939a0653c8a13d40e78280de",
+      "responseShapeHashSha256": "605d018a4d819ffb5b3907e2150986167b3186a68a33084304ff375ae622675e"
+    },
+    {
+      "method": "POST",
+      "path": "/api/resources/{type}/{id}/views",
+      "responses": [
+        {
+          "statusCode": "202",
+          "contentTypes": []
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "5eaa7ad375e27ea54b88077f7249fb175dd8d17a22bd21c79205f9a1c05ac8b8",
+      "responseShapeHashSha256": "557a466a66db3c60bd772736f2ae3b1d5bdf523559a5911f894c168da91ba11f"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/interaction/authoritative-state",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "8b4092d1d690b9f4169a3c992b79c7399f23d52875aa3e4b944ed1f6ae270b8c",
+      "responseShapeHashSha256": "54e1d69a7dcba42f7658c934f1525261fb789923ed1e4e646a22712bc557c4a4"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/admin/cases",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "29135a28e05f724af8f0dd5059174d27870ef4c8f0669e6c6ab30e87427e9a22",
+      "responseShapeHashSha256": "66ff237cb073295e973e6d13a0d383fdc92592a4ffdd796fa748b0d929fd79f1"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/admin/cases/{caseId}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "bb8e19b30f772625b42367ab4d2e92a5d7e9eefd251a852cad426787ba69f5c7",
+      "responseShapeHashSha256": "014c20a3029e5db3905a79ad75211014a4fd1141cd5f706bc8a11eff3b0dfa17"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/admin/cases/{caseId}/audit",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "4e36542a3eb87d0318aa1647c73f17fafed38de43bc4fc86dd49f33d70fe6cd4",
+      "responseShapeHashSha256": "8365ec2f3309909ad16bae4e736942df129c206726009ceb50658ecb4d9d9aae"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/admin/cases/{caseId}/close",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "fcef0d35f7f620562a8e36cc3a885b52c648882eceefc46ccdbaf92255aeb0a0",
+      "responseShapeHashSha256": "6fd863fd4c11d03ad25709268479b83da2dcfb48146e75cf2257bf0ed471c9ec"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/admin/cases/{caseId}/legal-holds",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "0f73a91d2798bb098950400a78c145ddceefa92899b5c2a4fb39a21a1e6ae3ea",
+      "responseShapeHashSha256": "d5d4280da453c17bc628cc9fc292729b4fba637256f243ec32735b53c6e15a3b"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/admin/cases/{caseId}/legal-holds/release",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "548b15d8456cf17bc50fbcdadefb8fef7aa2c3fbb2a93bd67d0035db50d81843",
+      "responseShapeHashSha256": "d5d4280da453c17bc628cc9fc292729b4fba637256f243ec32735b53c6e15a3b"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/decision-state",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "3b0c914e1c87815aa8e360c0ad5908ad89d9b21c71867f89dd4c8f5d99cfdd16",
+      "responseShapeHashSha256": "1d06d4adf22f874fc65b71581f114031f76c72f8691cec71ce1b00192ff7b648"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/decision/cases/{caseId}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "000fa2c72fbe392bf279762199444d916034324efeefee069baea1c25f511a2d",
+      "responseShapeHashSha256": "014c20a3029e5db3905a79ad75211014a4fd1141cd5f706bc8a11eff3b0dfa17"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/decision/cases/{caseId}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "2a45315556d400f04b4d3e1654f4d7693feafa7b328803a1c2ce304000834498",
+      "responseShapeHashSha256": "6fd863fd4c11d03ad25709268479b83da2dcfb48146e75cf2257bf0ed471c9ec"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/investigation/cases/{caseId}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "6407d30729cc4021af28f1d3ab6fa57868f7d893a63b4ea0e8fadae1b16082d6",
+      "responseShapeHashSha256": "014c20a3029e5db3905a79ad75211014a4fd1141cd5f706bc8a11eff3b0dfa17"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/investigation/cases/{caseId}/complete",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "ec40acae2e89f80882fce46cd3958f71d99e838f05101e5a09e43fd4ba00ceec",
+      "responseShapeHashSha256": "6fd863fd4c11d03ad25709268479b83da2dcfb48146e75cf2257bf0ed471c9ec"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/investigation/cases/{caseId}/messages",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "b8c5115ea24bf6d5a3729cf62655b226358708aa90b70af9c419fcc3ad626fa7",
+      "responseShapeHashSha256": "b6b64677a41a9753978d721003960e30e387a2bfa9c25cbb597a5840d95ca3ff"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/investigation/cases/{caseId}/messages",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "b0ee5f30a1e43fd85d74911a84eab4540bf60bf6f359a0736e86d64be7735927",
+      "responseShapeHashSha256": "efe786d29e674d56a558af1e2a4cf56395af219d20ce47d92b241d10136b4c9e"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/investigation/cases/{caseId}/start",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "49b1d566a8508d10ba47eef84f43fd95812bbd7e7c4db6b39382df081f6a0c3f",
+      "responseShapeHashSha256": "6fd863fd4c11d03ad25709268479b83da2dcfb48146e75cf2257bf0ed471c9ec"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/triage/cases",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "e023951cdd3a7c2adb537635c85cdff78e3c2524b9647a0acc5a2dc30b24add8",
+      "responseShapeHashSha256": "66ff237cb073295e973e6d13a0d383fdc92592a4ffdd796fa748b0d929fd79f1"
+    },
+    {
+      "method": "GET",
+      "path": "/internal/moderation/triage/cases/{caseId}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "77e5b5e69e8f9eb58914f6d94586cb800d11e6fbe1bfca5c32c5a3eacaf688ad",
+      "responseShapeHashSha256": "014c20a3029e5db3905a79ad75211014a4fd1141cd5f706bc8a11eff3b0dfa17"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/triage/cases/{caseId}",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "1744e4b27c82a4f87be817a0416c3107d31eb9f32b8fc9ce052341256d03d193",
+      "responseShapeHashSha256": "6fd863fd4c11d03ad25709268479b83da2dcfb48146e75cf2257bf0ed471c9ec"
+    },
+    {
+      "method": "POST",
+      "path": "/internal/moderation/triage/cases/{caseId}/assignment",
+      "responses": [
+        {
+          "statusCode": "200",
+          "contentTypes": [
+            "application/json"
+          ]
+        },
+        {
+          "statusCode": "400",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "401",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "403",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "404",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "409",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "412",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        },
+        {
+          "statusCode": "428",
+          "contentTypes": [
+            "application/problem\u002Bjson"
+          ]
+        }
+      ],
+      "operationStatusHashSha256": "e5325d960ec159ce093a87d5383ad4ab4e9b5ff05c8b9c6563d01891798e9428",
+      "responseShapeHashSha256": "6fd863fd4c11d03ad25709268479b83da2dcfb48146e75cf2257bf0ed471c9ec"
+    }
+  ]
+}

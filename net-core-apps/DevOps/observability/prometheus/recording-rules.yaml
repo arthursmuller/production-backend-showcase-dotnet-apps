@@ -1,0 +1,438 @@
+groups:
+  - name: inspacy.slo.targets
+    interval: 1m
+    rules:
+      # Engineering targets from DevOps/operational-baselines/slo.yaml. These constants are not
+      # evidence that any environment currently meets the objectives.
+      - record: inspacy:slo_error_budget_fraction
+        expr: |
+          label_replace(vector(0.0005), "service_name", "Comment.API", "__name__", ".*")
+          or label_replace(vector(0.0005), "service_name", "Feed.API", "__name__", ".*")
+          or label_replace(vector(0.0005), "service_name", "Following.API", "__name__", ".*")
+          or label_replace(vector(0.0005), "service_name", "Interaction.API", "__name__", ".*")
+          or label_replace(vector(0.0010), "service_name", "Moderation.API", "__name__", ".*")
+      - record: inspacy:slo_http_p95_target_seconds
+        expr: |
+          label_replace(vector(0.250), "service_name", "Comment.API", "__name__", ".*")
+          or label_replace(vector(0.200), "service_name", "Feed.API", "__name__", ".*")
+          or label_replace(vector(0.200), "service_name", "Following.API", "__name__", ".*")
+          or label_replace(vector(0.150), "service_name", "Interaction.API", "__name__", ".*")
+          or label_replace(vector(0.400), "service_name", "Moderation.API", "__name__", ".*")
+      - record: inspacy:slo_http_p99_target_seconds
+        expr: |
+          label_replace(vector(0.750), "service_name", "Comment.API", "__name__", ".*")
+          or label_replace(vector(0.600), "service_name", "Feed.API", "__name__", ".*")
+          or label_replace(vector(0.600), "service_name", "Following.API", "__name__", ".*")
+          or label_replace(vector(0.500), "service_name", "Interaction.API", "__name__", ".*")
+          or label_replace(vector(1.200), "service_name", "Moderation.API", "__name__", ".*")
+
+  - name: inspacy.http
+    interval: 30s
+    rules:
+      - record: inspacy:http_server_requests:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_http_server_request_outcomes_total{
+              http_route!~"/health/(live|ready)"
+            }[5m])
+          )
+      - record: inspacy:http_server_eligible_requests:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_http_server_request_outcomes_total{
+              http_route!~"/health/(live|ready)",
+              http_request_outcome=~"success|load_shed|server_timeout|dependency_unavailable|server_error"
+            }[5m])
+          )
+      - record: inspacy:http_server_eligible_errors:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_http_server_request_outcomes_total{
+              http_route!~"/health/(live|ready)",
+              http_request_outcome=~"load_shed|server_timeout|dependency_unavailable|server_error"
+            }[5m])
+          )
+      - record: inspacy:http_server_error_ratio:ratio5m
+        expr: |
+          inspacy:http_server_eligible_errors:rate5m
+          /
+          clamp_min(inspacy:http_server_eligible_requests:rate5m, 0.000001)
+      - record: inspacy:http_server_error_ratio:ratio1h
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_http_server_request_outcomes_total{
+              http_route!~"/health/(live|ready)",
+              http_request_outcome=~"load_shed|server_timeout|dependency_unavailable|server_error"
+            }[1h])
+          )
+          /
+          clamp_min(
+            sum by (deployment_environment_name, service_name) (
+              rate(inspacy_http_server_request_outcomes_total{
+                http_route!~"/health/(live|ready)",
+                http_request_outcome=~"success|load_shed|server_timeout|dependency_unavailable|server_error"
+              }[1h])
+            ),
+            0.000001
+          )
+      - record: inspacy:http_server_error_ratio:ratio6h
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_http_server_request_outcomes_total{
+              http_route!~"/health/(live|ready)",
+              http_request_outcome=~"load_shed|server_timeout|dependency_unavailable|server_error"
+            }[6h])
+          )
+          /
+          clamp_min(
+            sum by (deployment_environment_name, service_name) (
+              rate(inspacy_http_server_request_outcomes_total{
+                http_route!~"/health/(live|ready)",
+                http_request_outcome=~"success|load_shed|server_timeout|dependency_unavailable|server_error"
+              }[6h])
+            ),
+            0.000001
+          )
+      - record: inspacy:slo_burn_rate:ratio1h
+        expr: |
+          inspacy:http_server_error_ratio:ratio1h
+          / on (service_name) group_left
+          inspacy:slo_error_budget_fraction
+      - record: inspacy:slo_burn_rate:ratio6h
+        expr: |
+          inspacy:http_server_error_ratio:ratio6h
+          / on (service_name) group_left
+          inspacy:slo_error_budget_fraction
+      - record: inspacy:http_server_latency_seconds:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, le) (
+              rate(http_server_request_duration_seconds_bucket{http_route!~"/health/(live|ready)"}[5m])
+            )
+          )
+      - record: inspacy:http_server_latency_seconds:p99_5m
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum by (deployment_environment_name, service_name, le) (
+              rate(http_server_request_duration_seconds_bucket{http_route!~"/health/(live|ready)"}[5m])
+            )
+          )
+
+  - name: inspacy.cache
+    interval: 30s
+    rules:
+      - record: inspacy:cache_requests:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_cache_requests_total[5m])
+          )
+      - record: inspacy:cache_errors:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, cache_layer, cache_operation) (
+            rate(inspacy_cache_errors_total[5m])
+          )
+      - record: inspacy:cache_error_ratio:ratio5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (inspacy:cache_errors:rate5m)
+          /
+          clamp_min(inspacy:cache_requests:rate5m, 0.000001)
+      - record: inspacy:cache_source_rejections:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_cache_source_rejections_total[5m])
+          )
+      - record: inspacy:cache_hit_ratio:ratio5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (rate(inspacy_cache_hits_total[5m]))
+          /
+          clamp_min(
+            sum by (deployment_environment_name, service_name) (
+              rate(inspacy_cache_hits_total[5m]) + rate(inspacy_cache_misses_total[5m])
+            ),
+            0.000001
+          )
+      - record: inspacy:cache_operation_latency_milliseconds:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, cache_layer, cache_operation, le) (
+              rate(inspacy_cache_operation_duration_milliseconds_bucket[5m])
+            )
+          )
+
+  - name: inspacy.messaging
+    interval: 30s
+    rules:
+      - record: inspacy:masstransit_consume:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, messaging_masstransit_destination) (
+            rate(messaging_masstransit_consume_total[5m])
+          )
+      - record: inspacy:masstransit_consume_errors:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, messaging_masstransit_destination) (
+            rate(messaging_masstransit_consume_errors_total[5m])
+          )
+      - record: inspacy:masstransit_consume_error_ratio:ratio5m
+        expr: |
+          inspacy:masstransit_consume_errors:rate5m
+          /
+          clamp_min(inspacy:masstransit_consume:rate5m, 0.000001)
+      - record: inspacy:masstransit_consume_retries:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, messaging_masstransit_destination) (
+            rate(messaging_masstransit_consume_retries_total[5m])
+          )
+      - record: inspacy:masstransit_consume_latency_milliseconds:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, messaging_masstransit_destination, le) (
+              rate(messaging_masstransit_consume_duration_milliseconds_bucket[5m])
+            )
+          )
+      - record: inspacy:masstransit_outbox_faults:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate({__name__=~"messaging_masstransit_outbox_(delivery|send)_errors_total"}[5m])
+          )
+      # Collapse duplicate process replicas per build-time-bounded store, then add
+      # stores for a service. Most services own one outbox store.
+      - record: inspacy:masstransit_outbox_pending:sum
+        expr: |
+          sum without (outbox_store) (
+            max by (deployment_environment_name, service_name, outbox_store) (
+              inspacy_messaging_outbox_pending
+            )
+          )
+      - record: inspacy:masstransit_outbox_oldest_age_seconds:max
+        expr: |
+          max by (deployment_environment_name, service_name) (
+            inspacy_messaging_outbox_oldest_age_seconds
+          )
+      - record: inspacy:masstransit_outbox_sample_success:min
+        expr: |
+          min by (deployment_environment_name, service_name) (
+            inspacy_messaging_outbox_sample_success
+          )
+      # MassTransit 8.5.10 implements active work as a Counter with +/- deltas.
+      # Keep this diagnostic-only until the collector path proves gauge semantics.
+      - record: inspacy:masstransit_active_work:raw
+        expr: |
+          sum by (deployment_environment_name, service_name, messaging_masstransit_destination) (
+            messaging_masstransit_consume_active_total
+          )
+
+  - name: inspacy.database
+    interval: 30s
+    rules:
+      - record: inspacy:mariadb_commands:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_mariadb_command_executions_total[5m])
+          )
+      - record: inspacy:mariadb_slow_commands:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, db_operation_name) (
+            rate(inspacy_mariadb_command_slow_executions_total[5m])
+          )
+      - record: inspacy:mariadb_slow_command_ratio:ratio5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            inspacy:mariadb_slow_commands:rate5m
+          )
+          /
+          clamp_min(inspacy:mariadb_commands:rate5m, 0.000001)
+      - record: inspacy:mariadb_failed_commands:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, db_operation_name) (
+            rate(inspacy_mariadb_command_executions_total{
+              inspacy_db_command_outcome="failure"
+            }[5m])
+          )
+      - record: inspacy:mariadb_failed_commands_by_kind:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, inspacy_db_command_failure_kind) (
+            rate(inspacy_mariadb_command_executions_total{
+              inspacy_db_command_outcome="failure"
+            }[5m])
+          )
+      - record: inspacy:mariadb_command_latency_milliseconds:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, db_operation_name, le) (
+              rate(inspacy_mariadb_command_duration_milliseconds_bucket[5m])
+            )
+          )
+
+  - name: inspacy.domain_signals
+    interval: 30s
+    rules:
+      - record: inspacy:comment_audience_projection_faults:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, relationship_kind, projection_outcome) (
+            rate(inspacy_comment_audience_projection_outcomes_total{
+              projection_outcome=~"gap|invalid"
+            }[5m])
+          )
+      - record: inspacy:comment_audience_authorization_unavailable:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, audience_policy) (
+            rate(inspacy_comment_audience_authorization_outcomes_total{
+              authorization_outcome="unavailable"
+            }[5m])
+          )
+      - record: inspacy:comment_user_erasure_faults:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, erasure_outcome) (
+            rate(inspacy_comment_user_erasure_cycles_total{
+              erasure_outcome=~"blocked|retry|lease_lost|time_budget"
+            }[5m])
+          )
+      - record: inspacy:comment_user_erasure_rows:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, erasure_stage) (
+            rate(inspacy_comment_user_erasure_rows_total[5m])
+          )
+      - record: inspacy:feed_audience_projection_faults:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, relationship_kind, projection_outcome) (
+            rate(inspacy_feed_audience_projection_outcomes_total{
+              projection_outcome=~"gap_quarantined|invalid_quarantined|snapshot_.*"
+            }[5m])
+          )
+      - record: inspacy:feed_fault_outcomes:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, operation, outcome, mode) (
+            rate(inspacy_feed_outcomes_total{
+              outcome=~"attempt_limit|gap|identity_conflict|metadata_conflict|mismatch|version_conflict"
+            }[5m])
+          )
+      - record: inspacy:feed_activity_projection_convergence_seconds:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, le) (
+              rate(inspacy_feed_activity_projection_convergence_duration_seconds_bucket[5m])
+            )
+          )
+      - record: inspacy:feed_activity_projection_convergence_breaches:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(inspacy_feed_activity_projection_convergence_breaches_total[5m])
+          )
+      - record: inspacy:feed_audience_projection_convergence_seconds:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, projection_source, le) (
+              rate(inspacy_feed_audience_projection_convergence_duration_seconds_bucket[5m])
+            )
+          )
+      - record: inspacy:feed_audience_projection_convergence_breaches:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, projection_source) (
+            rate(inspacy_feed_audience_projection_convergence_breaches_total[5m])
+          )
+      - record: inspacy:feed_revocation_completion_seconds:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, revocation_kind, le) (
+              rate(inspacy_feed_revocation_completion_duration_seconds_bucket[5m])
+            )
+          )
+      - record: inspacy:feed_revocation_completion_breaches:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, revocation_kind) (
+            rate(inspacy_feed_revocation_completion_breaches_total[5m])
+          )
+      - record: inspacy:interaction_projection_gaps:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, projection) (
+            rate(inspacy_interaction_projection_gaps_total[5m])
+          )
+      - record: inspacy:interaction_ingestion_outcomes:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, ingestion_kind, ingestion_outcome) (
+            rate(inspacy_interaction_ingestion_outcomes_total[5m])
+          )
+      - record: inspacy:interaction_reconciliation_drift_observations:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, counter) (
+            rate(inspacy_interaction_reconciliation_drift_count[5m])
+          )
+      - record: inspacy:interaction_reconciliation_absolute_drift:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, counter) (
+            rate(inspacy_interaction_reconciliation_drift_sum[5m])
+          )
+      - record: inspacy:interaction_projection_gap_unresolved:max
+        expr: |
+          max by (deployment_environment_name, service_name) (
+            inspacy_interaction_projection_gap_unresolved
+          )
+      - record: inspacy:interaction_projection_gap_oldest_age_seconds:max
+        expr: |
+          max by (deployment_environment_name, service_name) (
+            inspacy_interaction_projection_gap_oldest_age_seconds
+          )
+      - record: inspacy:interaction_projection_gap_sample_timestamp_seconds:max
+        expr: |
+          max by (deployment_environment_name, service_name) (
+            inspacy_interaction_projection_gap_sample_timestamp_seconds
+          )
+      - record: inspacy:moderation_escalations:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            rate(moderation_cases_escalated_total[5m])
+          )
+      - record: inspacy:moderation_workflow_rejections:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, reason) (
+            rate(moderation_workflow_rejections_total[5m])
+          )
+      - record: inspacy:moderation_boundary_cancellations:rate5m
+        expr: |
+          sum by (deployment_environment_name, service_name, boundary) (
+            rate(moderation_operation_boundary_cancellations_total[5m])
+          )
+      - record: inspacy:moderation_operation_latency_milliseconds:p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, le) (
+              rate(moderation_operation_duration_milliseconds_bucket[5m])
+            )
+          )
+      - record: inspacy:moderation_first_response_seconds:p95_1h
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (deployment_environment_name, service_name, le) (
+              rate(moderation_first_response_duration_seconds_bucket[1h])
+            )
+          )
+      - record: inspacy:moderation_sla_active:max
+        expr: |
+          max by (deployment_environment_name, service_name) (
+            moderation_sla_active
+          )
+      - record: inspacy:moderation_sla_overdue:max
+        expr: |
+          max by (deployment_environment_name, service_name) (
+            moderation_sla_overdue
+          )
+      - record: inspacy:moderation_sla_oldest_overdue_age_seconds:max
+        expr: |
+          max by (deployment_environment_name, service_name) (
+            moderation_sla_oldest_overdue_age_seconds
+          )
+      - record: inspacy:moderation_sla_sample_timestamp_seconds:max
+        expr: |
+          max by (deployment_environment_name, service_name) (
+            moderation_sla_sample_timestamp_seconds
+          )

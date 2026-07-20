@@ -1,0 +1,501 @@
+groups:
+  - name: inspacy.slo_burn
+    interval: 30s
+    rules:
+      - alert: InspacyApiFastErrorBudgetBurn
+        expr: inspacy:slo_burn_rate:ratio1h > 14.4
+        for: 5m
+        labels:
+          severity: page
+          owner: platform-sre
+          slo: availability
+        annotations:
+          summary: "{{ $labels.service_name }} is burning its API error budget quickly"
+          description: "The exact bounded 1h eligible-error ratio is {{ $value | humanize }}x the 28d budget in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+          target_source: "DevOps/operational-baselines/slo.yaml"
+      - alert: InspacyApiSlowErrorBudgetBurn
+        expr: inspacy:slo_burn_rate:ratio6h > 2
+        for: 15m
+        labels:
+          severity: ticket
+          owner: platform-sre
+          slo: availability
+        annotations:
+          summary: "{{ $labels.service_name }} has sustained API error-budget burn"
+          description: "The exact bounded 6h eligible-error ratio is {{ $value | humanize }}x the 28d budget in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+          target_source: "DevOps/operational-baselines/slo.yaml"
+      - alert: InspacyApiP95LatencyAboveTarget
+        expr: |
+          inspacy:http_server_latency_seconds:p95_5m
+          > on (service_name) group_left
+          inspacy:slo_http_p95_target_seconds
+        for: 15m
+        labels:
+          severity: ticket
+          owner: service-owner
+          slo: latency
+        annotations:
+          summary: "{{ $labels.service_name }} p95 API latency exceeds its engineering target"
+          description: "Observed p95 is {{ $value | humanizeDuration }} in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+          target_source: "DevOps/operational-baselines/slo.yaml"
+
+  - name: inspacy.cache_and_messaging
+    interval: 30s
+    rules:
+      - alert: InspacyCacheErrorRatioHigh
+        expr: |
+          (inspacy:cache_error_ratio:ratio5m > 0.01)
+          and on (deployment_environment_name, service_name)
+          (inspacy:cache_requests:rate5m > 1)
+        for: 10m
+        labels:
+          severity: ticket
+          owner: service-owner
+          dependency: cache
+        annotations:
+          summary: "{{ $labels.service_name }} cache error ratio is above 1%"
+          description: "The 5m cache error ratio is {{ $value | humanizePercentage }} in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyCacheSourceRejectionsPersisting
+        expr: inspacy:cache_source_rejections:rate5m > 0.1
+        for: 10m
+        labels:
+          severity: page
+          owner: platform-sre
+          dependency: cache
+        annotations:
+          summary: "{{ $labels.service_name }} is persistently rejecting authoritative cache fills"
+          description: "Source-budget rejections exceed 0.1/s for 10m in {{ $labels.deployment_environment_name }}; protect the database from a cache-zero stampede."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyMassTransitConsumeFaultRatioHigh
+        expr: |
+          (inspacy:masstransit_consume_error_ratio:ratio5m > 0.001)
+          and on (deployment_environment_name, service_name, messaging_masstransit_destination)
+          (inspacy:masstransit_consume_errors:rate5m > 0.0166667)
+        for: 5m
+        labels:
+          severity: ticket
+          owner: service-owner
+          dependency: rabbitmq
+        annotations:
+          summary: "{{ $labels.service_name }} consumer faults exceed 0.1%"
+          description: "At least five faults per five minutes are occurring on {{ $labels.messaging_masstransit_destination }} in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyMassTransitOutboxFaults
+        expr: inspacy:masstransit_outbox_faults:rate5m > 0
+        for: 1m
+        labels:
+          severity: page
+          owner: service-owner
+          dependency: rabbitmq
+        annotations:
+          summary: "{{ $labels.service_name }} MassTransit outbox delivery is faulting"
+          description: "Outbox send or delivery faults are present in {{ $labels.deployment_environment_name }}. Correlate with the service-owned depth and oldest-age signals."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyMassTransitOutboxOldestAgeExceeded
+        expr: inspacy:masstransit_outbox_oldest_age_seconds:max > 30
+        for: 2m
+        labels:
+          severity: page
+          owner: service-owner
+          dependency: rabbitmq
+        annotations:
+          summary: "{{ $labels.service_name }} transactional outbox is older than 30 seconds"
+          description: "The oldest undelivered EF bus-outbox message has exceeded the healthy delivery objective in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyMassTransitOutboxSamplerFailed
+        expr: inspacy:masstransit_outbox_sample_success:min < 1
+        for: 2m
+        labels:
+          severity: page
+          owner: service-owner
+          dependency: mariadb
+        annotations:
+          summary: "{{ $labels.service_name }} transactional outbox telemetry is stale"
+          description: "The aggregate-only EF bus-outbox sample has failed for two minutes in {{ $labels.deployment_environment_name }}; the prior backlog sample is retained and must not be treated as current."
+          runbook: "../README.md#dependency-degradation"
+
+  - name: inspacy.database
+    interval: 30s
+    rules:
+      - alert: InspacyMariaDbSlowCommandRatioHigh
+        expr: |
+          (inspacy:mariadb_slow_command_ratio:ratio5m > 0.01)
+          and on (deployment_environment_name, service_name)
+          (inspacy:mariadb_commands:rate5m > 1)
+        for: 10m
+        labels:
+          severity: ticket
+          owner: data-platform
+          dependency: mariadb
+        annotations:
+          summary: "{{ $labels.service_name }} has a sustained slow MariaDB command ratio"
+          description: "More than 1% of commands exceeded the configured safe slow-command threshold for 10m in {{ $labels.deployment_environment_name }}. Inspect restricted query-plan tooling; SQL text is intentionally absent from telemetry."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyMariaDbCommandFailuresPersisting
+        expr: sum without (db_operation_name) (inspacy:mariadb_failed_commands:rate5m) > 0.1
+        for: 5m
+        labels:
+          severity: page
+          owner: data-platform
+          dependency: mariadb
+        annotations:
+          summary: "{{ $labels.service_name }} MariaDB command failures are persisting"
+          description: "Database command failures exceed 0.1/s for 5m in {{ $labels.deployment_environment_name }}. No statement, parameter, identifier, or exception text is exported by this signal."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyMariaDbDeadlocksPersisting
+        expr: |
+          inspacy:mariadb_failed_commands_by_kind:rate5m{
+            inspacy_db_command_failure_kind="deadlock"
+          } > 0
+        for: 5m
+        labels:
+          severity: ticket
+          owner: data-platform
+          dependency: mariadb
+        annotations:
+          summary: "{{ $labels.service_name }} has sustained MariaDB deadlocks"
+          description: "Typed connector error 1213 has continued for five minutes in {{ $labels.deployment_environment_name }}; SQL and exception text are intentionally absent."
+          runbook: "../README.md#dependency-degradation"
+
+  - name: inspacy.comment
+    interval: 30s
+    rules:
+      - alert: InspacyCommentAudienceProjectionFault
+        expr: sum without (relationship_kind, projection_outcome) (inspacy:comment_audience_projection_faults:rate5m) > 0
+        for: 1m
+        labels:
+          severity: page
+          owner: comment
+          component: audience-projection
+          security: authorization-sensitive
+        annotations:
+          summary: "Comment relationship projection is gapped or quarantined"
+          description: "Comment non-owner reads are failing closed until an authoritative snapshot reconciles the projection."
+          runbook: "../README.md#comment-audience-and-privacy"
+      - alert: InspacyCommentAudienceBootstrapFailed
+        expr: |
+          sum by (deployment_environment_name, service_name, bootstrap_outcome) (
+            increase(inspacy_comment_audience_bootstrap_outcomes_total{
+              bootstrap_outcome="failed"
+            }[5m])
+          ) > 0
+        labels:
+          severity: page
+          owner: comment
+          component: audience-bootstrap
+          security: authorization-sensitive
+        annotations:
+          summary: "Comment relationship bootstrap failed"
+          description: "The fixed-boundary Following snapshot did not complete; Comment remains fail closed."
+          runbook: "../README.md#comment-audience-and-privacy"
+      - alert: InspacyCommentAudienceAuthorizationUnavailable
+        expr: sum without (audience_policy) (inspacy:comment_audience_authorization_unavailable:rate5m) > 0
+        for: 5m
+        labels:
+          severity: ticket
+          owner: comment
+          component: audience-authorization
+        annotations:
+          summary: "Comment audience authorization is unavailable"
+          description: "Authenticated Comment reads are returning safe 503 responses because local relationship knowledge is not ready."
+          runbook: "../README.md#comment-audience-and-privacy"
+      - alert: InspacyCommentUserErasureBlocked
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            increase(inspacy_comment_user_erasure_cycles_total{
+              erasure_outcome="blocked"
+            }[5m])
+          ) > 0
+        labels:
+          severity: page
+          owner: comment
+          component: user-erasure
+          privacy: deletion
+        annotations:
+          summary: "Comment user erasure is blocked"
+          description: "Comment refused to guess media ownership; no completion acknowledgement was emitted."
+          runbook: "../README.md#user-erasure-recovery"
+      - alert: InspacyCommentUserErasureRetriesPersisting
+        expr: |
+          sum without (erasure_outcome) (
+            inspacy:comment_user_erasure_faults:rate5m{
+              erasure_outcome=~"retry|lease_lost|time_budget"
+            }
+          ) > 0
+        for: 15m
+        labels:
+          severity: ticket
+          owner: comment
+          component: user-erasure
+          privacy: deletion
+        annotations:
+          summary: "Comment user erasure retries are persisting"
+          description: "Bounded erasure cycles have not converged for 15 minutes in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#user-erasure-recovery"
+
+  - name: inspacy.feed_and_interaction
+    interval: 15s
+    rules:
+      - alert: InspacyFeedBlockProjectionQuarantined
+        expr: |
+          sum by (deployment_environment_name, service_name, projection_outcome) (
+            increase(inspacy_feed_audience_projection_outcomes_total{
+              relationship_kind="block",
+              projection_outcome=~"gap_quarantined|invalid_quarantined|snapshot_.*"
+            }[2m])
+          ) > 0
+        labels:
+          severity: page
+          owner: feed
+          security: authorization-sensitive
+        annotations:
+          summary: "A block projection event was quarantined"
+          description: "Feed observed {{ $value | humanize }} block projection faults in {{ $labels.deployment_environment_name }}; affected reads must remain fail-closed."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+          target_source: "DevOps/operational-baselines/slo.yaml#visibility-revocation"
+      - alert: InspacyFeedAudienceProjectionFaults
+        expr: sum without (relationship_kind, projection_outcome) (inspacy:feed_audience_projection_faults:rate5m) > 0
+        for: 1m
+        labels:
+          severity: ticket
+          owner: feed
+          component: audience-projection
+        annotations:
+          summary: "Feed audience projection is quarantining or rejecting events"
+          description: "Projection fault outcomes continue in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+      - alert: InspacyFeedAudienceBootstrapIncomplete
+        expr: |
+          sum by (deployment_environment_name, service_name, bootstrap_outcome) (
+            increase(inspacy_feed_audience_bootstrap_outcomes_total{
+              bootstrap_outcome=~"health_missing|health_incomplete|health_stale|health_gapped|invalid_page|incomplete"
+            }[5m])
+          ) > 0
+        labels:
+          severity: page
+          owner: feed
+          component: audience-bootstrap
+          security: authorization-sensitive
+        annotations:
+          summary: "Feed relationship bootstrap is not a fresh complete authority snapshot"
+          description: "Feed is failing closed for non-owner visibility while bootstrap outcome {{ $labels.bootstrap_outcome }} persists."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+      - alert: InspacyFeedFaultOutcomes
+        expr: sum without (operation, outcome, mode) (inspacy:feed_fault_outcomes:rate5m) > 0
+        for: 1m
+        labels:
+          severity: ticket
+          owner: feed
+          component: feed
+        annotations:
+          summary: "Feed recorded gap, conflict, mismatch, or attempt-limit outcomes"
+          description: "Feed fault outcomes continue in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+      - alert: InspacyFeedActivityProjectionConvergenceExceeded
+        expr: inspacy:feed_activity_projection_convergence_breaches:rate5m > 0
+        labels:
+          severity: page
+          owner: feed
+          component: activity-projection
+        annotations:
+          summary: "Feed activity projection exceeded 60-second convergence"
+          description: "At least one canonical activity was not committed and queryable within the exact 60-second objective in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+          target_source: "DevOps/operational-baselines/slo.yaml#projection-convergence"
+      - alert: InspacyFeedAudienceProjectionConvergenceExceeded
+        expr: inspacy:feed_audience_projection_convergence_breaches:rate5m > 0
+        labels:
+          severity: page
+          owner: feed
+          component: audience-projection
+          security: authorization-sensitive
+        annotations:
+          summary: "Feed audience projection exceeded 60-second convergence"
+          description: "A {{ $labels.projection_source }} relationship projection was not committed and queryable within the exact 60-second objective in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+          target_source: "DevOps/operational-baselines/slo.yaml#projection-convergence"
+      - alert: InspacyFeedRevocationCompletionExceeded
+        expr: inspacy:feed_revocation_completion_breaches:rate5m > 0
+        labels:
+          severity: page
+          owner: feed
+          component: visibility-revocation
+          security: authorization-sensitive
+        annotations:
+          summary: "Feed visibility revocation exceeded five seconds"
+          description: "A {{ $labels.revocation_kind }} revocation did not complete its committed final sweep within the exact five-second objective in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+          target_source: "DevOps/operational-baselines/slo.yaml#visibility-revocation"
+      - alert: InspacyFeedUserErasureFailures
+        expr: sum by (deployment_environment_name, service_name) (increase(inspacy_feed_user_erasure_failures_total[5m])) > 0
+        for: 1m
+        labels:
+          severity: page
+          owner: feed
+          component: privacy-erasure
+          security: privacy-sensitive
+        annotations:
+          summary: "Feed user erasure worker is failing"
+          description: "A fenced Feed erasure page or completion outbox transaction failed in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#user-erasure-recovery"
+      - alert: InspacyFeedPullPublisherCapReached
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            increase(inspacy_feed_outcomes_total{
+              operation="pull_publishers",
+              outcome="capped"
+            }[5m])
+          ) > 0
+        labels:
+          severity: ticket
+          owner: feed
+          component: capacity
+        annotations:
+          summary: "Feed pull-publisher hard cap was reached"
+          description: "The 64-publisher pull cap from the capacity envelope was reached {{ $value | humanize }} times in five minutes."
+          runbook: "../README.md#dependency-degradation"
+          target_source: "DevOps/operational-baselines/capacity-envelope.yaml"
+      - alert: InspacyInteractionProjectionGapObserved
+        expr: sum without (projection) (inspacy:interaction_projection_gaps:rate5m) > 0
+        for: 1m
+        labels:
+          severity: ticket
+          owner: interaction
+          component: projection
+        annotations:
+          summary: "Interaction observed a source-version gap"
+          description: "Projection gaps continue in {{ $labels.deployment_environment_name }}; affected resources fail closed until reconciled."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+      - alert: InspacyInteractionReconciliationDriftPersisting
+        expr: |
+          sum without (counter) (
+            inspacy:interaction_reconciliation_drift_observations:rate5m
+          ) > 0
+        for: 10m
+        labels:
+          severity: ticket
+          owner: interaction
+          component: reconciliation
+        annotations:
+          summary: "Interaction authoritative counter drift is persisting"
+          description: "Reconciliation continues to find aggregate-only counter differences in {{ $labels.deployment_environment_name }}; no resource identifiers are exported."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+      - alert: InspacyInteractionProjectionGapConvergenceExceeded
+        expr: inspacy:interaction_projection_gap_oldest_age_seconds:max > 60
+        for: 2m
+        labels:
+          severity: page
+          owner: interaction
+          component: projection
+        annotations:
+          summary: "Interaction projection gap has remained unresolved for over 60 seconds"
+          description: "At least one authorization-sensitive resource projection is outside its convergence objective in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+          target_source: "DevOps/operational-baselines/slo.yaml#projection-convergence"
+      - alert: InspacyInteractionProjectionGapSamplerStale
+        expr: time() - inspacy:interaction_projection_gap_sample_timestamp_seconds:max > 120
+        for: 2m
+        labels:
+          severity: page
+          owner: interaction
+          component: projection
+        annotations:
+          summary: "Interaction unresolved-gap telemetry is stale"
+          description: "The bounded aggregate projection-gap sample has not completed for over two minutes in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#projection-rebuild-and-message-replay"
+  - name: inspacy.moderation
+    interval: 30s
+    rules:
+      - alert: InspacyModerationCaseEscalatedForSla
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            increase(moderation_cases_escalated_total[5m])
+          ) > 0
+        labels:
+          severity: page
+          owner: moderation
+          component: sla
+        annotations:
+          summary: "Moderation escalated overdue cases"
+          description: "{{ $value | humanize }} cases crossed their configured SLA and were escalated in five minutes."
+          runbook: "../README.md#dependency-degradation"
+          target_source: "DevOps/operational-baselines/slo.yaml#moderation-first-response"
+      - alert: InspacyModerationOperationP95High
+        expr: inspacy:moderation_operation_latency_milliseconds:p95_5m > 400
+        for: 15m
+        labels:
+          severity: ticket
+          owner: moderation
+          component: workflow
+        annotations:
+          summary: "Moderation report-intake p95 duration exceeds 400ms"
+          description: "The instrumented report-submission p95 is {{ $value | humanize }}ms in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyModerationWorkflowRejectionsPersisting
+        expr: |
+          sum without (reason) (
+            inspacy:moderation_workflow_rejections:rate5m
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: ticket
+          owner: moderation
+          component: workflow
+        annotations:
+          summary: "Moderation workflow rejections are persisting"
+          description: "Version or workflow conflicts exceed 0.1/s for ten minutes in {{ $labels.deployment_environment_name }}; case and evidence identifiers are absent."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyModerationBoundaryCancellationsPersisting
+        expr: |
+          sum without (boundary) (
+            inspacy:moderation_boundary_cancellations:rate5m
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: ticket
+          owner: moderation
+          component: workflow
+        annotations:
+          summary: "Moderation application mutations are being canceled"
+          description: "Application-mutation boundary cancellations exceed 0.1/s for ten minutes in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyModerationFirstResponseBreach
+        expr: |
+          sum by (deployment_environment_name, service_name) (
+            increase(moderation_first_response_breaches_total[5m])
+          ) > 0
+        labels:
+          severity: page
+          owner: moderation
+          component: sla
+        annotations:
+          summary: "Moderation first response exceeded four hours"
+          description: "{{ $value | humanize }} newly triaged cases exceeded the committed 14,400-second first-response objective in five minutes."
+          runbook: "../README.md#dependency-degradation"
+          target_source: "DevOps/operational-baselines/slo.yaml#moderation_first_response_seconds"
+      - alert: InspacyModerationActiveSlaOverdue
+        expr: inspacy:moderation_sla_overdue:max > 0
+        for: 2m
+        labels:
+          severity: page
+          owner: moderation
+          component: sla
+        annotations:
+          summary: "Moderation has active overdue cases"
+          description: "{{ $value | humanize }} cases remain beyond their current SLA due time in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"
+      - alert: InspacyModerationSlaSamplerStale
+        expr: time() - inspacy:moderation_sla_sample_timestamp_seconds:max > 120
+        for: 2m
+        labels:
+          severity: page
+          owner: moderation
+          component: sla
+        annotations:
+          summary: "Moderation aggregate SLA telemetry is stale"
+          description: "The restricted aggregate SLA sample has not completed for over two minutes in {{ $labels.deployment_environment_name }}."
+          runbook: "../README.md#dependency-degradation"

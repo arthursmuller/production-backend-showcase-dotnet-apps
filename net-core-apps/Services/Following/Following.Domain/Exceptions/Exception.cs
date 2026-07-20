@@ -1,18 +1,21 @@
-﻿using System;
+using System;
 
 namespace Following.Domain.Exceptions
 {
-    public class FollowingException : Exception
+    public class FollowingException : DomainExceptions.DomainException
     {
-        public int StatusCode { get; set; }
-        public FollowingException() { }
+        public FollowingException()
+        {
+        }
 
         public FollowingException(string message)
-            : base(message) { }
-        public FollowingException(string message, int statusCode)
             : base(message)
         {
-            StatusCode = statusCode;
+        }
+
+        public FollowingException(string message, int statusCode)
+            : base(message, statusCode)
+        {
         }
     }
 }

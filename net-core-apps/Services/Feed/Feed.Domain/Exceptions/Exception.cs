@@ -1,18 +1,21 @@
-﻿using System;
+using System;
 
 namespace Feed.Domain.Exceptions
 {
-    public class FeedException : Exception
+    public class FeedException : DomainExceptions.DomainException
     {
-        public int StatusCode { get; set; }
-        public FeedException() { }
+        public FeedException()
+        {
+        }
 
         public FeedException(string message)
-            : base(message) { }
-        public FeedException(string message, int statusCode)
             : base(message)
         {
-            StatusCode = statusCode;
+        }
+
+        public FeedException(string message, int statusCode)
+            : base(message, statusCode)
+        {
         }
     }
 }

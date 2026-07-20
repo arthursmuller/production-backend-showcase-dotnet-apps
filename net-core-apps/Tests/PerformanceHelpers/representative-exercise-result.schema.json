@@ -1,0 +1,409 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inspacy.local/schemas/representative-exercise-result.schema.json",
+  "title": "Sanitized representative exercise result",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "planId",
+    "runId",
+    "exerciseType",
+    "gates",
+    "status",
+    "targetEnvironment",
+    "startedAtUtc",
+    "finishedAtUtc",
+    "changeId",
+    "owner",
+    "reviewers",
+    "sourceRevision",
+    "imageDigests",
+    "infrastructureRevision",
+    "dataProfile",
+    "safety",
+    "phases",
+    "faults",
+    "metrics",
+    "artifacts",
+    "attestations",
+    "approvals",
+    "residualRisks",
+    "disposition"
+  ],
+  "properties": {
+    "$schema": { "const": "representative-exercise-result.schema.json" },
+    "schemaVersion": { "const": "2.0" },
+    "planId": { "$ref": "#/$defs/safeId" },
+    "runId": { "$ref": "#/$defs/safeId" },
+    "exerciseType": { "$ref": "#/$defs/exerciseType" },
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["0.7", "0.10", "2.9", "2.10", "2.11", "6.9", "6.10", "6.11", "6.12"] }
+    },
+    "status": { "enum": ["in-progress", "passed", "failed", "aborted"] },
+    "targetEnvironment": { "$ref": "#/$defs/safeId" },
+    "startedAtUtc": { "type": "string", "format": "date-time" },
+    "finishedAtUtc": { "type": ["string", "null"], "format": "date-time" },
+    "changeId": { "$ref": "#/$defs/safeId" },
+    "owner": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "reviewers": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+    },
+    "sourceRevision": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{7,64}$"
+    },
+    "imageDigests": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+    },
+    "infrastructureRevision": { "$ref": "#/$defs/safeId" },
+    "dataProfile": { "$ref": "#/$defs/dataProfile" },
+    "safety": { "$ref": "#/$defs/safety" },
+    "phases": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 24,
+      "items": { "$ref": "#/$defs/phase" }
+    },
+    "faults": {
+      "type": "array",
+      "maxItems": 24,
+      "items": { "$ref": "#/$defs/phase" }
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 24,
+      "items": { "$ref": "#/$defs/metricResult" }
+    },
+    "artifacts": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "attestations": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/attestation" }
+    },
+    "approvals": {
+      "type": "array",
+      "maxItems": 32,
+      "items": { "$ref": "#/$defs/approval" }
+    },
+    "residualRisks": {
+      "type": "array",
+      "maxItems": 32,
+      "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+    },
+    "disposition": { "$ref": "#/$defs/disposition" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "safeId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "exerciseType": {
+      "enum": [
+        "projection-rebuild",
+        "performance-baseline",
+        "ddl-role-separation",
+        "migration-recovery",
+        "storage-scale-read-replica",
+        "dependency-resilience",
+        "database-failover",
+        "backup-restore-pitr",
+        "az-region-failback",
+        "cache-zero-backlog",
+        "connection-cost-headroom",
+        "canary-rollback"
+      ]
+    },
+    "approverRole": {
+      "enum": [
+        "cache-owner",
+        "database-engineering",
+        "finance-cost",
+        "messaging-owner",
+        "platform-sre",
+        "privacy-legal",
+        "product",
+        "release-manager",
+        "security",
+        "service-owner"
+      ]
+    },
+    "dataProfile": {
+      "type": "object",
+      "required": [
+        "sanitized",
+        "productionDataUsed",
+        "generatorRevision",
+        "distributionVerified",
+        "cardinality"
+      ],
+      "properties": {
+        "sanitized": { "const": true },
+        "productionDataUsed": { "const": false },
+        "generatorRevision": { "$ref": "#/$defs/safeId" },
+        "distributionVerified": { "type": "boolean" },
+        "cardinality": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_.-]+$" },
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "targetIsProduction",
+        "isolatedTargetVerified",
+        "credentialsFromEnvironment",
+        "writerFenceRequired",
+        "writerFenceVerified",
+        "destructiveStepsProviderApproved",
+        "abortAuthorityPresent",
+        "immutableEvidenceTargetConfigured"
+      ],
+      "properties": {
+        "targetIsProduction": { "const": false },
+        "isolatedTargetVerified": { "type": "boolean" },
+        "credentialsFromEnvironment": { "const": true },
+        "writerFenceRequired": { "type": "boolean" },
+        "writerFenceVerified": { "type": "boolean" },
+        "destructiveStepsProviderApproved": { "type": "boolean" },
+        "abortAuthorityPresent": { "type": "boolean" },
+        "immutableEvidenceTargetConfigured": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "phase": {
+      "type": "object",
+      "required": ["name", "status", "startedAtUtc", "finishedAtUtc", "artifactRefs"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9-]+$"
+        },
+        "status": { "enum": ["not-started", "running", "passed", "failed", "aborted"] },
+        "startedAtUtc": { "type": ["string", "null"], "format": "date-time" },
+        "finishedAtUtc": { "type": ["string", "null"], "format": "date-time" },
+        "artifactRefs": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeId" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "metricResult": {
+      "type": "object",
+      "required": ["name", "unit", "operator", "target", "actual", "passed", "source"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "pattern": "^[a-z][a-z0-9_.-]+$"
+        },
+        "unit": {
+          "enum": [
+            "count",
+            "percent",
+            "milliseconds",
+            "seconds",
+            "bytes",
+            "connections",
+            "currency-percent"
+          ]
+        },
+        "operator": { "enum": ["<=", ">=", "=="] },
+        "target": { "type": "number" },
+        "actual": { "type": ["number", "null"] },
+        "passed": { "type": ["boolean", "null"] },
+        "source": { "type": "string", "minLength": 1, "maxLength": 200 }
+      },
+      "additionalProperties": false
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["id", "kind", "uri", "sha256", "retentionUntilUtc"],
+      "properties": {
+        "id": { "$ref": "#/$defs/safeId" },
+        "kind": {
+          "enum": [
+            "approval-record",
+            "cardinality-manifest",
+            "command-log",
+            "configuration-manifest",
+            "cost-export",
+            "fault-timeline",
+            "grant-report",
+            "integrity-report",
+            "metric-export",
+            "performance-result",
+            "production-grant-policy-export",
+            "production-principal-attestation",
+            "query-plan-report",
+            "reconciliation-report",
+            "restore-manifest",
+            "rollback-report",
+            "schema-report",
+            "topology-manifest"
+          ]
+        },
+        "uri": {
+          "type": "string",
+          "pattern": "^(artifact|https)://[^\\s]+$",
+          "maxLength": 1000
+        },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "retentionUntilUtc": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "attestation": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "sourceEnvironment",
+        "serviceDomain",
+        "observedAtUtc",
+        "importedAtUtc",
+        "productionEnvironmentRevision",
+        "principalIdSha256",
+        "deployedIdentityRevision",
+        "secretRevisionIdSha256",
+        "workloadRevision",
+        "grantPolicyRevision",
+        "grantPolicyExportArtifactRef",
+        "attestationArtifactRef",
+        "claims",
+        "claimEvidenceRefs"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/safeId" },
+        "type": { "const": "production-principal-grant" },
+        "sourceEnvironment": { "const": "production" },
+        "serviceDomain": {
+          "enum": ["comment", "feed", "following", "interaction", "moderation"]
+        },
+        "observedAtUtc": { "type": "string", "format": "date-time" },
+        "importedAtUtc": { "type": "string", "format": "date-time" },
+        "productionEnvironmentRevision": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "principalIdSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "deployedIdentityRevision": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "secretRevisionIdSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "workloadRevision": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "grantPolicyRevision": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "grantPolicyExportArtifactRef": { "$ref": "#/$defs/safeId" },
+        "attestationArtifactRef": { "$ref": "#/$defs/safeId" },
+        "claims": {
+          "type": "object",
+          "required": [
+            "runtimeDdlDenied",
+            "runtimeDmlSmokePassed",
+            "migrationOnlyDdlVerified",
+            "crossRoleIsolationVerified"
+          ],
+          "properties": {
+            "runtimeDdlDenied": { "const": true },
+            "runtimeDmlSmokePassed": { "const": true },
+            "migrationOnlyDdlVerified": { "const": true },
+            "crossRoleIsolationVerified": { "const": true }
+          },
+          "additionalProperties": false
+        },
+        "claimEvidenceRefs": {
+          "type": "object",
+          "required": [
+            "runtimeDdlDenied",
+            "runtimeDmlSmokePassed",
+            "migrationOnlyDdlVerified",
+            "crossRoleIsolationVerified"
+          ],
+          "properties": {
+            "runtimeDdlDenied": { "$ref": "#/$defs/safeId" },
+            "runtimeDmlSmokePassed": { "$ref": "#/$defs/safeId" },
+            "migrationOnlyDdlVerified": { "$ref": "#/$defs/safeId" },
+            "crossRoleIsolationVerified": { "$ref": "#/$defs/safeId" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "id",
+        "role",
+        "decision",
+        "subjects",
+        "decidedAtUtc",
+        "evidenceRef",
+        "boundSourceRevision",
+        "boundImageDigests",
+        "boundInfrastructureRevision"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/safeId" },
+        "role": { "$ref": "#/$defs/approverRole" },
+        "decision": { "enum": ["approve", "reject"] },
+        "subjects": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeId" }
+        },
+        "decidedAtUtc": { "type": "string", "format": "date-time" },
+        "evidenceRef": { "$ref": "#/$defs/safeId" },
+        "boundSourceRevision": { "type": "string", "pattern": "^[0-9a-fA-F]{7,64}$" },
+        "boundImageDigests": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+        },
+        "boundInfrastructureRevision": { "$ref": "#/$defs/safeId" }
+      },
+      "additionalProperties": false
+    },
+    "disposition": {
+      "type": "object",
+      "required": ["decision", "decidedAtUtc", "approvalRefs"],
+      "properties": {
+        "decision": { "enum": ["pending", "approve", "reject", "repeat"] },
+        "decidedAtUtc": { "type": ["string", "null"], "format": "date-time" },
+        "approvalRefs": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeId" }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

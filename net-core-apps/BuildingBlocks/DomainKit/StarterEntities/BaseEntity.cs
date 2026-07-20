@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace StarterEntities
 {
@@ -10,8 +10,9 @@ namespace StarterEntities
         protected DateTime _createdDate;
         public DateTime UpdateDate { get; set; } = DateTime.UtcNow;
         public string UserUpdate { get; set; } = "SISTEMA";
-        public BaseEntity() {
-            _createdDate  = DateTime.UtcNow;
+        public BaseEntity()
+        {
+            _createdDate = DateTime.UtcNow;
         }
 
         public BaseEntity(DateTime createdDate)
@@ -22,6 +23,7 @@ namespace StarterEntities
         public BaseEntity(int id)
         {
             _id = id;
+            _createdDate = DateTime.UtcNow;
         }
     }
 }

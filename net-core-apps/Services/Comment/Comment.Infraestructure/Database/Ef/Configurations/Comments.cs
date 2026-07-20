@@ -1,153 +1,134 @@
-﻿using Comment.Domain.AggregatesModel;
+using Comment.Domain.AggregatesModel;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Comment.Infra.EntityConfigurations
 {
-    public class CommentConfiguration : BaseConfiguration, IEntityTypeConfiguration<CommentPost>
+    public sealed class CommentConfiguration : BaseConfiguration, IEntityTypeConfiguration<CommentPost>
     {
         public void Configure(EntityTypeBuilder<CommentPost> builder)
         {
-            setPropriedadesDeEntidadeBase(builder);
-            builder.Ignore(e => e.DomainEvents);
+            ConfigureBaseEntity(builder, "CommentPost");
+            builder.Ignore(comment => comment.DomainEvents);
 
-            builder.Property(m => m.Description)
+            builder.Property(comment => comment.AuthorUserId).IsRequired();
+            builder.Property(comment => comment.TargetType)
+                .HasMaxLength(CommentFieldLimits.TargetType)
+                .IsRequired();
+            builder.Property(comment => comment.TargetId)
+                .HasMaxLength(CommentFieldLimits.TargetId)
+                .IsRequired();
+            builder.Property(comment => comment.Description)
+                .HasMaxLength(CommentFieldLimits.Description)
                 .UsePropertyAccessMode(PropertyAccessMode.Field);
-            builder.Property(m => m.GifUrl)
+            builder.Property(comment => comment.GifUrl)
+                .HasMaxLength(CommentFieldLimits.Url)
                 .UsePropertyAccessMode(PropertyAccessMode.Field);
-            builder.Property(m => m.IdOfRelatedEntity)
+            builder.Property(comment => comment.VisibilityLevelId).IsRequired();
+            builder.Property(comment => comment.PublishedOnFeed)
+                .IsRequired()
                 .UsePropertyAccessMode(PropertyAccessMode.Field);
-            builder.Property(m => m.TypeOfRelatedEntity)
+            builder.Property(comment => comment.CategoryMentionsPublished)
+                .IsRequired()
                 .UsePropertyAccessMode(PropertyAccessMode.Field);
-            builder.Property(m => m.PublishedOnFeed)
-                .UsePropertyAccessMode(PropertyAccessMode.Field);
+            builder.Property(comment => comment.Version)
+                .IsRequired()
+                .IsConcurrencyToken();
 
-            builder.Property(b => b.RelatedEntity)
-                .HasComputedColumnSql("LOWER(CONCAT(IdOfRelatedEntity,TypeOfRelatedEntity))");
+            ConfigureOwnedUser(builder, comment => comment.User);
+            builder.ToTable("CommentPost", table => table.HasCheckConstraint(
+                "CK_CmtPost_VisibilityLevel",
+                "`VisibilityLevelId` IN (1, 2, 3, 4)"));
 
-            builder.HasOne(e => e.Social);
-            builder.OwnsOne(e => e.User);
-            builder.OwnsOne(e => e.VisibilityLevel);
-            builder.OwnsMany(e => e.Categories);
-            builder.OwnsMany(e => e.Mentions, mb => mb.ToTable("CommentMentions"));
-            builder.Navigation(e => e.Mentions).AutoInclude();
-            builder.HasMany(e => e.MediaItems);
-            builder.Navigation(e => e.MediaItems).AutoInclude();
+            builder.OwnsMany(comment => comment.Categories, categories =>
+            {
+                categories.ToTable("CategoryName");
+                categories.WithOwner().HasForeignKey("CommentPostId");
+                categories.Property<int>("Id").ValueGeneratedOnAdd();
+                categories.HasKey("CommentPostId", "Id");
+                categories.Property(category => category.Name)
+                    .HasMaxLength(CommentFieldLimits.CategoryName)
+                    .IsRequired();
+                categories.HasIndex("CommentPostId", nameof(CategoryName.Name))
+                    .IsUnique()
+                    .HasDatabaseName("UX_CategoryName_CommentPostId_Name");
+            });
 
-            builder.Navigation(e => e.Social).AutoInclude(true);
+            builder.OwnsMany(comment => comment.Mentions, mentions =>
+            {
+                mentions.ToTable("CommentMentions");
+                mentions.WithOwner().HasForeignKey("CommentPostId");
+                mentions.Property<int>("Id").ValueGeneratedOnAdd();
+                mentions.HasKey("CommentPostId", "Id");
+                mentions.Property(mention => mention.UserId).IsRequired();
+                mentions.Property(mention => mention.UserName)
+                    .HasMaxLength(CommentFieldLimits.MentionUserName)
+                    .IsRequired();
+                mentions.HasIndex("CommentPostId", nameof(UserMention.UserId))
+                    .IsUnique()
+                    .HasDatabaseName("UX_CommentMentions_CommentPostId_UserId");
+            });
+
+            builder.HasMany(comment => comment.MediaItems)
+                .WithOne()
+                .HasForeignKey("CommentPostId")
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_CmtMedia_Comment");
+
+            builder.HasIndex(comment => new
+            {
+                comment.TargetType,
+                comment.TargetId,
+                comment.VisibilityLevelId,
+                comment.CreatedDate,
+                comment.Id,
+            })
+                .IsDescending(false, false, false, true, true)
+                .HasDatabaseName("IX_CommentPost_Target_Visibility_Created_Id");
+            builder.HasIndex(comment => new
+            {
+                comment.AuthorUserId,
+                comment.CreatedDate,
+                comment.Id,
+            })
+                .IsDescending(false, true, true)
+                .HasDatabaseName("IX_CommentPost_Author_Created_Id");
+            builder.HasIndex(comment => new
+            {
+                comment.VisibilityLevelId,
+                comment.CreatedDate,
+                comment.Id,
+            })
+                .IsDescending(false, true, true)
+                .HasDatabaseName("IX_CommentPost_Visibility_Created_Id");
+
+            // Public reads fail closed. Owner/command repositories deliberately opt
+            // out after applying their authenticated owner predicates.
+            builder.HasQueryFilter(comment =>
+                comment.VisibilityLevelId == VisibilityLevel.Global.Id);
         }
     }
 
-    public class CommentMediaItemEntityConfiguration : BaseConfiguration, IEntityTypeConfiguration<CommentMediaItem>
+    public sealed class CommentMediaItemEntityConfiguration
+        : BaseConfiguration, IEntityTypeConfiguration<CommentMediaItem>
     {
         public void Configure(EntityTypeBuilder<CommentMediaItem> builder)
         {
-            setPropriedadesDeEntidadeBase(builder);
-            builder.Property(x => x.Order).IsRequired();
-            builder.Property(x => x.Url).IsRequired().HasMaxLength(500);
-            builder.Property(x => x.FileName).IsRequired().HasMaxLength(255);
-            builder.Property(x => x.MediaType).IsRequired().HasConversion<int>();
-            builder.Property(x => x.ThumbnailUrl).HasMaxLength(500);
-            builder.Property(x => x.DurationSeconds);
-            builder.Property(x => x.MimeType).HasMaxLength(100);
+            ConfigureBaseEntity(builder, "CommentMediaItem");
+            builder.Property(media => media.Order).IsRequired();
+            builder.Property(media => media.Url)
+                .IsRequired()
+                .HasMaxLength(CommentFieldLimits.Url);
+            builder.Property(media => media.FileName).IsRequired().HasMaxLength(255);
+            builder.Property(media => media.MediaType).IsRequired().HasConversion<int>();
+            builder.Property(media => media.ThumbnailUrl).HasMaxLength(CommentFieldLimits.Url);
+            builder.Property(media => media.DurationSeconds);
+            builder.Property(media => media.MimeType).IsRequired().HasMaxLength(100);
+            builder.HasIndex("CommentPostId", nameof(CommentMediaItem.Order))
+                .IsUnique()
+                .HasDatabaseName("UX_CommentMediaItem_CommentPostId_Order");
         }
     }
 
-    #region SOCIAL
-    public class CommentSocialAnalyticsConfiguration : StarterConfiguration, IEntityTypeConfiguration<CommentSocialAnalytics>
-    {
-        public void Configure(EntityTypeBuilder<CommentSocialAnalytics> builder)
-        {
-            setRatingAnalyticsProps<CommentSocialAnalytics, ValueGeneratorCommentAverageRating>(builder);
-        }
-    }
-    public class CommentRatingConfiguration : StarterConfiguration, IEntityTypeConfiguration<CommentSocialRating>
-    {
-        public void Configure(EntityTypeBuilder<CommentSocialRating> builder)
-        {
-            setRatingProps<
-                CommentSocialRating,
-                CommentLike,
-                CommentDislike,
-                CommentRatingLevel,
-                CommentReport,
-                CommentShare,
-                CommentPostComment
-            >(builder);
-
-            builder.Property(m => m.CommentId)
-              .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-            builder.HasOne(e => e.Analytics);
-            builder.Navigation(e => e.Analytics).AutoInclude(true);
-        }
-    }
-    public class CommentLikeConfiguration : SocialInteractionsConfiguration, IEntityTypeConfiguration<CommentLike>
-    {
-        public void Configure(EntityTypeBuilder<CommentLike> builder)
-        {
-            setCommomLike(builder);
-        }
-    }
-    public class CommentDislikeConfiguration : SocialInteractionsConfiguration, IEntityTypeConfiguration<CommentDislike>
-    {
-        public void Configure(EntityTypeBuilder<CommentDislike> builder)
-        {
-            setCommomDislike(builder);
-        }
-    }
-    public class CommentRatingLevelConfiguration : SocialInteractionsConfiguration, IEntityTypeConfiguration<CommentRatingLevel>
-    {
-        public void Configure(EntityTypeBuilder<CommentRatingLevel> builder)
-        {
-            setCommomRatingLevel(builder);
-        }
-    }
-    public class CommentReportConfiguration : SocialInteractionsConfiguration, IEntityTypeConfiguration<CommentReport>
-    {
-        public void Configure(EntityTypeBuilder<CommentReport> builder)
-        {
-            setCommomReport(builder);
-        }
-    }
-    public class CommentShareConfiguration : SocialInteractionsConfiguration, IEntityTypeConfiguration<CommentShare>
-    {
-        public void Configure(EntityTypeBuilder<CommentShare> builder)
-        {
-            setCommomShare(builder);
-        }
-    }
-    public class CommentCommentConfiguration : SocialInteractionsConfiguration, IEntityTypeConfiguration<CommentPostComment>
-    {
-        public void Configure(EntityTypeBuilder<CommentPostComment> builder)
-        {
-            setCommomComment(builder);
-        }
-    }
-    public class CommentBookmarkConfiguration : SocialInteractionsConfiguration, IEntityTypeConfiguration<CommentBookmark>
-    {
-        public void Configure(EntityTypeBuilder<CommentBookmark> builder)
-        {
-            setPropriedadesDeEntidadeBase(builder);
-
-            builder.Property(m => m.UserId).UsePropertyAccessMode(PropertyAccessMode.Field);
-            builder.Property(m => m.PostId).UsePropertyAccessMode(PropertyAccessMode.Field);
-            builder.Property(m => m.GroupId).UsePropertyAccessMode(PropertyAccessMode.Field);
-            builder.Property(m => m.GroupName).HasMaxLength(120).UsePropertyAccessMode(PropertyAccessMode.Field);
-
-            builder.HasIndex(m => new { m.UserId, m.PostId });
-            builder.HasIndex(m => new { m.UserId, m.GroupId, m.PostId }).IsUnique();
-        }
-    }
-
-    #endregion
-
-    #region TRANSFORMERS
-    class ValueGeneratorCommentAverageRating : Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator
-    {
-        public override bool GeneratesTemporaryValues => false;
-        protected override object NextValue(EntityEntry entry) => ((CommentSocialAnalytics)entry.Entity).AverageRating;
-    }
-    #endregion
 }

@@ -6,14 +6,4 @@
     <RootNamespace>StarterEntities</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\DomainEventing\DomainEventing.csproj" />
-    <ProjectReference Include="..\RichEnumeration\RichEnumeration.csproj" />
-    <ProjectReference Include="..\StarterEntities.Storage\StarterEntities.Storage.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
 </Project>

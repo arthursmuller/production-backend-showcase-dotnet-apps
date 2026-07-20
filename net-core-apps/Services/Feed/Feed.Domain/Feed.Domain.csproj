@@ -2,14 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>Feed.Domain</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\RichEnumeration\RichEnumeration.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\StarterEntities\StarterEntities.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\DomainKit\DomainExceptions\DomainExceptions.csproj" />
   </ItemGroup>
 
 </Project>

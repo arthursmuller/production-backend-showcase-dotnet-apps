@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
+  <PropertyGroup Label="Globals">
+    <ProjectVersion>2.1</ProjectVersion>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerPublishLocally>False</DockerPublishLocally>
+    <ProjectGuid>6ac0e2e8-7811-44be-a68f-237f323a226f</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include=".env.example" />
+    <None Include="docker-compose.override.yml">
+      <DependentUpon>docker-compose.yml</DependentUpon>
+    </None>
+    <None Include="docker-compose.yml" />
+    <None Include="Dockerfiles\Comment.Api.Dockerfile" />
+    <None Include="Dockerfiles\Feed.Api.Dockerfile" />
+    <None Include="Dockerfiles\Following.Api.Dockerfile" />
+    <None Include="Dockerfiles\Interaction.Api.Dockerfile" />
+    <None Include="Dockerfiles\Moderation.Api.Dockerfile" />
+    <None Include="Dockerfiles\RabbitMq.Dockerfile" />
+    <None Include="Dockerfiles\Comment.Api.Dockerfile.dockerignore" />
+    <None Include="Dockerfiles\Feed.Api.Dockerfile.dockerignore" />
+    <None Include="Dockerfiles\Following.Api.Dockerfile.dockerignore" />
+    <None Include="Dockerfiles\Interaction.Api.Dockerfile.dockerignore" />
+    <None Include="Dockerfiles\Moderation.Api.Dockerfile.dockerignore" />
+    <None Include="charts\**\*" />
+    <None Include="environments\**\*" />
+    <None Include="observability\**\*" />
+    <None Include="security\**\*" />
+  </ItemGroup>
+</Project>

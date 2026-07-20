@@ -10,6 +10,10 @@
 *.userosscache
 *.sln.docstates
 
+# Local service credentials and connection strings
+.env
+!.env.example
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

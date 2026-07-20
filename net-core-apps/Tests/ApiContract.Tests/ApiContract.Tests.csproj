@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\Brokers\MessageBrokerContracts\MessageBrokerContracts.csproj" />
+    <ProjectReference Include="..\..\Services\Comment\Comment.Api\Comment.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Feed\Feed.Api\Feed.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Following\Following.Api\Following.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Interaction\Interaction.Api\Interaction.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Moderation\Moderation.Api\Moderation.Api.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,257 @@
+{{- if and .Values.service.enabled .Values.networkPolicy.enabled }}
+{{- if .Values.migration.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "inspacy-service.fullname" . }}-migration-egress
+  labels:
+{{ include "inspacy-service.commonLabels" . | indent 4 }}
+  {{- if .Values.migration.helmHook }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-15"
+    # Keep the allow-list through the later-weighted migration Job.
+    helm.sh/hook-delete-policy: before-hook-creation
+  {{- end }}
+spec:
+  podSelector:
+    matchLabels:
+{{ include "inspacy-service.selectorLabels" (dict "root" . "role" "migration") | indent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+{{ include "inspacy-service.migrationEgressRules" . | indent 4 }}
+{{- end }}
+{{- if and .Values.roles.api.enabled (or .Values.networkPolicy.apiClusterEgress .Values.networkPolicy.apiExternalEgress) }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "inspacy-service.fullname" . }}-api-extra-egress
+  labels:
+{{ include "inspacy-service.commonLabels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+{{ include "inspacy-service.selectorLabels" (dict "root" . "role" "api") | indent 6 }}
+  policyTypes: [Egress]
+  egress:
+  {{- range .Values.networkPolicy.apiClusterEgress }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+{{ toYaml .namespaceSelector | indent 14 }}
+          podSelector:
+            matchLabels:
+{{ toYaml .podSelector | indent 14 }}
+      ports:
+{{ toYaml .ports | indent 8 }}
+  {{- end }}
+  {{- range .Values.networkPolicy.apiExternalEgress }}
+    - to:
+        - ipBlock:
+            cidr: {{ .cidr }}
+{{- with .except }}
+            except:
+{{ toYaml . | indent 14 }}
+{{- end }}
+      ports:
+{{ toYaml .ports | indent 8 }}
+  {{- end }}
+{{- end }}
+{{- if and .Values.roles.consumer.enabled (or .Values.networkPolicy.consumerClusterEgress .Values.networkPolicy.consumerExternalEgress) }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "inspacy-service.fullname" . }}-consumer-extra-egress
+  labels:
+{{ include "inspacy-service.commonLabels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+{{ include "inspacy-service.selectorLabels" (dict "root" . "role" "consumer") | indent 6 }}
+  policyTypes: [Egress]
+  egress:
+  {{- range .Values.networkPolicy.consumerClusterEgress }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+{{ toYaml .namespaceSelector | indent 14 }}
+          podSelector:
+            matchLabels:
+{{ toYaml .podSelector | indent 14 }}
+      ports:
+{{ toYaml .ports | indent 8 }}
+  {{- end }}
+  {{- range .Values.networkPolicy.consumerExternalEgress }}
+    - to:
+        - ipBlock:
+            cidr: {{ .cidr }}
+{{- with .except }}
+            except:
+{{ toYaml . | indent 14 }}
+{{- end }}
+      ports:
+{{ toYaml .ports | indent 8 }}
+  {{- end }}
+{{- end }}
+{{- if and .Values.roles.job.enabled (or .Values.networkPolicy.jobClusterEgress .Values.networkPolicy.jobExternalEgress) }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "inspacy-service.fullname" . }}-job-extra-egress
+  labels:
+{{ include "inspacy-service.commonLabels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+{{ include "inspacy-service.selectorLabels" (dict "root" . "role" "job") | indent 6 }}
+  policyTypes: [Egress]
+  egress:
+  {{- range .Values.networkPolicy.jobClusterEgress }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+{{ toYaml .namespaceSelector | indent 14 }}
+          podSelector:
+            matchLabels:
+{{ toYaml .podSelector | indent 14 }}
+      ports:
+{{ toYaml .ports | indent 8 }}
+  {{- end }}
+  {{- range .Values.networkPolicy.jobExternalEgress }}
+    - to:
+        - ipBlock:
+            cidr: {{ .cidr }}
+{{- with .except }}
+            except:
+{{ toYaml . | indent 14 }}
+{{- end }}
+      ports:
+{{ toYaml .ports | indent 8 }}
+  {{- end }}
+{{- end }}
+{{- if .Values.roles.api.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "inspacy-service.fullname" . }}-api-ingress
+  labels:
+{{ include "inspacy-service.commonLabels" . | indent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+{{ include "inspacy-service.selectorLabels" (dict "root" . "role" "api") | indent 6 }}
+  policyTypes: [Ingress]
+  ingress:
+    {{- range .Values.networkPolicy.apiIngress }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+{{ toYaml .namespaceSelector | indent 14 }}
+          podSelector:
+            matchLabels:
+{{ toYaml .podSelector | indent 14 }}
+      ports:
+{{ toYaml .ports | indent 8 }}
+    {{- end }}
+    {{- if .Values.networkPolicy.edgeNamespaceSelector }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+{{ toYaml .Values.networkPolicy.edgeNamespaceSelector | indent 14 }}
+          podSelector:
+            matchLabels:
+{{ toYaml .Values.networkPolicy.edgePodSelector | indent 14 }}
+      ports:
+        - { protocol: TCP, port: {{ .Values.service.port }} }
+    {{- end }}
+    {{- if .Values.networkPolicy.monitoringNamespaceSelector }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+{{ toYaml .Values.networkPolicy.monitoringNamespaceSelector | indent 14 }}
+          podSelector:
+            matchLabels:
+{{ toYaml .Values.networkPolicy.monitoringPodSelector | indent 14 }}
+      ports:
+        - { protocol: TCP, port: {{ .Values.service.port }} }
+    {{- end }}
+    {{- if and (not .Values.networkPolicy.edgeNamespaceSelector) (not .Values.networkPolicy.monitoringNamespaceSelector) (eq (len .Values.networkPolicy.apiIngress) 0) }}
+    []
+    {{- end }}
+{{- end }}
+{{- if or .Values.roles.consumer.enabled .Values.roles.job.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "inspacy-service.fullname" . }}-worker-ingress
+  labels:
+{{ include "inspacy-service.commonLabels" . | indent 4 }}
+spec:
+  podSelector:
+    matchExpressions:
+      - key: inspacy.io/runtime-role
+        operator: In
+        values:
+          {{- if .Values.roles.consumer.enabled }}
+          - consumer
+          {{- end }}
+          {{- if .Values.roles.job.enabled }}
+          - job
+          {{- end }}
+    matchLabels:
+      app.kubernetes.io/name: {{ include "inspacy-service.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes: [Ingress]
+  ingress:
+    {{- if .Values.networkPolicy.monitoringNamespaceSelector }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+{{ toYaml .Values.networkPolicy.monitoringNamespaceSelector | indent 14 }}
+          podSelector:
+            matchLabels:
+{{ toYaml .Values.networkPolicy.monitoringPodSelector | indent 14 }}
+      ports:
+        - { protocol: TCP, port: {{ .Values.service.port }} }
+    {{- else }}
+    []
+    {{- end }}
+{{- end }}
+{{- if or .Values.roles.api.enabled .Values.roles.consumer.enabled .Values.roles.job.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "inspacy-service.fullname" . }}-egress
+  labels:
+{{ include "inspacy-service.commonLabels" . | indent 4 }}
+spec:
+  podSelector:
+    matchExpressions:
+      - key: inspacy.io/runtime-role
+        operator: In
+        values:
+          {{- if .Values.roles.api.enabled }}
+          - api
+          {{- end }}
+          {{- if .Values.roles.consumer.enabled }}
+          - consumer
+          {{- end }}
+          {{- if .Values.roles.job.enabled }}
+          - job
+          {{- end }}
+    matchLabels:
+      app.kubernetes.io/name: {{ include "inspacy-service.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes: [Egress]
+  egress:
+{{ include "inspacy-service.egressRules" . | indent 4 }}
+{{- end }}
+{{- end }}

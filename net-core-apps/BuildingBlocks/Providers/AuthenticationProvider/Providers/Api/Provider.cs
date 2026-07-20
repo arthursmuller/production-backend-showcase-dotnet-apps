@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
@@ -10,76 +10,73 @@ namespace AuthenticationProvider.Providers.Api
 {
     public class AuthenticationApiProvider : AuthenticationApiBase, IAuthApi
     {
-        private TokenResponse _clientCredentialAccessToken;
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private readonly AccessTokenCache _tokenCache;
 
-        public AuthenticationApiProvider(HttpClient httpClient) : base(httpClient) { }
-
-        public async Task<string> GetAccessToken(string clientId, string clientSecret, string[] scopes)
+        public AuthenticationApiProvider(HttpClient httpClient, AccessTokenCache tokenCache) : base(httpClient)
         {
-            if (_clientCredentialAccessToken != null && _clientCredentialAccessToken.ExpiresAt > DateTime.UtcNow.AddMinutes(5))
-            {
-                return _clientCredentialAccessToken.AccessToken;
-            }
-
-            await _semaphore.WaitAsync();
-            try
-            {
-                if (_clientCredentialAccessToken != null && _clientCredentialAccessToken.ExpiresAt > DateTime.UtcNow.AddMinutes(5))
-                {
-                    return _clientCredentialAccessToken.AccessToken;
-                }
-
-                var tokenResponse = await getToken(clientId, clientSecret, scopes);
-
-                if (tokenResponse == null)
-                {
-                    throw new InvalidOperationException("Failed to acquire access token");
-                }
-
-                _clientCredentialAccessToken = new TokenResponse
-                {
-                    AccessToken = tokenResponse.access_token,
-                    ExpiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.expires_in)
-                };
-
-                return _clientCredentialAccessToken.AccessToken;
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            _tokenCache = tokenCache;
         }
 
-        private async Task<AuthenticationResponseDto> getToken(string clientId, string clientSecret, string[] scopes)
+        public async Task<string> GetAccessToken(
+            string clientId,
+            string clientSecret,
+            string[] scopes,
+            CancellationToken cancellationToken)
         {
-            AuthenticationResponseDto res = null;
+            ArgumentException.ThrowIfNullOrWhiteSpace(clientId);
+            ArgumentException.ThrowIfNullOrWhiteSpace(clientSecret);
+            ArgumentNullException.ThrowIfNull(scopes);
 
+            return await _tokenCache.GetOrCreateAsync(
+                clientId,
+                clientSecret,
+                scopes,
+                async token =>
+                {
+                    var response = await GetTokenAsync(clientId, clientSecret, scopes, token);
+                    if (response is null || string.IsNullOrWhiteSpace(response.access_token) || response.expires_in <= 0)
+                        throw new InvalidOperationException("The identity service returned an invalid token response.");
+
+                    return new TokenResponse
+                    {
+                        AccessToken = response.access_token,
+                        ExpiresAt = DateTime.UtcNow.AddSeconds(response.expires_in)
+                    };
+                },
+                cancellationToken);
+        }
+
+        private async Task<AuthenticationResponseDto> GetTokenAsync(
+            string clientId,
+            string clientSecret,
+            string[] scopes,
+            CancellationToken cancellationToken)
+        {
             try
             {
                 var requestContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>{
                     new("client_id", clientId),
                     new("client_secret", clientSecret),
                     new("grant_type", "client_credentials"),
-                    new ("scope", string.Join(" ", scopes)) 
+                    new ("scope", string.Join(" ", scopes))
                 });
 
-                var request = new HttpRequestMessage(HttpMethod.Post, "connect/token")
+                using var request = new HttpRequestMessage(HttpMethod.Post, "connect/token")
                 {
                     Content = requestContent
                 };
 
-                var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request, cancellationToken);
 
-                
-                res = await getResponseAsync<AuthenticationResponseDto>(response);
+                return await getResponseAsync<AuthenticationResponseDto>(
+                    response,
+                    cancellationToken);
             }
             catch (HttpRequestException ex)
             {
                 handleError(ex);
+                throw;
             }
-
-            return res;
         }
     }
 

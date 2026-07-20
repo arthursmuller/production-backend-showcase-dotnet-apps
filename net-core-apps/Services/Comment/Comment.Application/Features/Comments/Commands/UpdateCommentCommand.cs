@@ -1,36 +1,65 @@
-using Comment.Application.Abstractions;
-using Comment.Application.Abstractions.Persistence;
+using Comment.Domain.Repositories;
 using Comment.Application.Dtos;
 using Comment.Application.Providers.Storage;
+using Comment.Application.Features.Media.Commands;
 using Comment.Domain.AggregatesModel;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
+using Comment.Application.Features.Privacy;
 
 namespace Comment.Application.Features.Comments.Commands
 {
     public record UpdateCommentCommand(
         ICommentRepository _comments,
-        IIdentity _auth,
-        IStorage _storage) : Command<UpdateCommentDto, CommentPost>
+        IIdentityService _auth,
+        CommentMediaIngestionService _media,
+        ICommentUserErasureAuthority _erasure) : Command<UpdateCommentDto, CommentPost?>
     {
-        public override async Task<CommentPost> Handle(UpdateCommentDto dto)
+        public override async Task<CommentPost?> Handle(
+            UpdateCommentDto dto,
+            CancellationToken cancellationToken)
         {
-            var existing = await _comments.GetByIdAsync(dto.Id);
-            if (existing is null) return null;
+            var existing = await _comments.GetByIdAsync(dto.Id, cancellationToken);
+            if (existing is null)
+                return null;
 
-            var mediaItems = await dto.ResolveMediaItemsUpdate(
-                MediaConversionHelper.FromStringUploader(
-                    file => _storage.UploadComments(_auth.User.Id, file)));
+            var userId = _auth.User.Id;
+            await using var mutation = await _erasure.RequireActiveUsersAsync(
+                new[] { userId }.Concat((dto.Mentions ?? []).Select(value => value.UserId)),
+                cancellationToken);
+            existing.EnsureOwnedBy(userId);
+            var additions = dto.MediaItems?.ToAdd;
+            if (additions is null || additions.Count == 0)
+            {
+                existing.Update(userId, dto.ToDomain());
+                var updated = await _comments.SaveUpdatedAsync(existing, cancellationToken);
+                await mutation.CommitAsync(cancellationToken);
+                return updated;
+            }
 
-            existing.Update(
-                dto.Description,
-                dto.GifUrl,
-                dto.VisibilityLevel,
-                dto.Categories,
-                dto.CategoriesToRemove,
-                mediaItems,
-                dto.Mentions);
+            var media = await _media.IngestAsync(
+                additions,
+                userId,
+                dto.MediaUploadIdentity,
+                "update",
+                dto.Id,
+                cancellationToken);
+            if (media.Ingestion.BoundCommentId.HasValue)
+            {
+                var replay = await _comments.GetByIdAsync(dto.Id, cancellationToken);
+                await mutation.CommitAsync(cancellationToken);
+                return replay;
+            }
 
-            return await _comments.SaveUpdatedAsync(existing);
+            existing.Update(userId, dto.ToDomain());
+            existing.AttachMedia(media.Media);
+            var result = await _media.BindUpdatedCommentAsync(
+                media.Ingestion,
+                existing,
+                cancellationToken);
+            await mutation.CommitAsync(cancellationToken);
+            return result;
         }
     }
 }

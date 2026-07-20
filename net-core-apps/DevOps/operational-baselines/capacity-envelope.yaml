@@ -1,0 +1,52 @@
+schema_version: 1
+status: engineering_target_pending_measurement
+owner: backend-architecture
+external_approval_due: 2026-08-14
+minimum_capacity_headroom_percent: 30
+
+roles:
+  comment_api: { min_replicas: 3, max_replicas: 60, db_pool_per_replica: 8, max_inflight_per_replica: 256 }
+  feed_api: { min_replicas: 3, max_replicas: 100, db_pool_per_replica: 8, max_inflight_per_replica: 256 }
+  following_api: { min_replicas: 3, max_replicas: 40, db_pool_per_replica: 8, max_inflight_per_replica: 256 }
+  interaction_api: { min_replicas: 3, max_replicas: 100, db_pool_per_replica: 6, max_inflight_per_replica: 256 }
+  moderation_api: { min_replicas: 3, max_replicas: 20, db_pool_per_replica: 8, max_inflight_per_replica: 128 }
+  comment_consumers: { min_replicas: 2, max_replicas: 30, db_pool_per_replica: 8, prefetch: 32, concurrency: 16 }
+  feed_consumers: { min_replicas: 3, max_replicas: 80, db_pool_per_replica: 8, prefetch: 32, concurrency: 16 }
+  following_consumers: { min_replicas: 2, max_replicas: 30, db_pool_per_replica: 8, prefetch: 32, concurrency: 16 }
+  interaction_consumers: { min_replicas: 3, max_replicas: 60, db_pool_per_replica: 6, prefetch: 32, concurrency: 16 }
+  moderation_consumers: { min_replicas: 2, max_replicas: 20, db_pool_per_replica: 8, prefetch: 32, concurrency: 16 }
+  job_worker_per_service: { min_replicas: 1, max_replicas: 3, db_pool_per_replica: 4 }
+  migration_per_service: { max_replicas: 1, db_pool_per_replica: 5 }
+
+database_connection_ceiling:
+  comment: { fleet_maximum: 737, candidate_server_minimum: 1200, unallocated_reserve: 383 }
+  feed: { fleet_maximum: 1457, candidate_server_minimum: 2200, unallocated_reserve: 583 }
+  following: { fleet_maximum: 577, candidate_server_minimum: 1000, unallocated_reserve: 343 }
+  interaction: { fleet_maximum: 977, candidate_server_minimum: 1500, unallocated_reserve: 403 }
+  moderation: { fleet_maximum: 337, candidate_server_minimum: 600, unallocated_reserve: 203 }
+
+autoscaling:
+  api_scale_out_cpu_percent: 60
+  api_scale_in_cpu_percent: 40
+  api_scale_out_window_seconds: 300
+  api_scale_in_window_seconds: 900
+  consumer_scale_out_oldest_age_seconds: 15
+  consumer_scale_in_oldest_age_seconds: 5
+  consumer_scale_in_window_seconds: 1800
+
+hard_limits:
+  database_connection_utilization_percent: 75
+  database_cpu_p95_percent: 65
+  database_storage_utilization_percent: 70
+  redis_memory_utilization_percent: 65
+  rabbit_disk_utilization_percent: 60
+  hot_table_partition_rows: 500000000
+  feed_page_items: 50
+  feed_pull_publishers: 64
+  feed_candidates: 512
+  view_ingestion_batch: 500
+
+release_gate:
+  measured_in_representative_environment: false
+  cost_approved: false
+  approved_for_production_release: false

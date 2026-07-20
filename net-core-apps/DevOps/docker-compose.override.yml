@@ -1,0 +1,238 @@
+services:
+  mariadbData:
+    volumes:
+      - ~/.docker-conf/inspacy-mariadb-data:/var/lib/mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in DevOps/.env}
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    networks:
+      - inspacy
+
+  rabbitmq:
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in DevOps/.env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in DevOps/.env}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST:-inspacy}
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+    networks:
+      - inspacy
+
+  redis:
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lfu
+      - --requirepass
+      - ${REDIS_PASSWORD:?Set REDIS_PASSWORD in DevOps/.env}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in DevOps/.env}
+    ports:
+      - "6379:6379"
+    volumes:
+      - ~/.docker-conf/inspacy-redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+      start_period: 3s
+    networks:
+      - inspacy
+
+  minio:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in DevOps/.env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in DevOps/.env}
+    volumes:
+      - ~/.docker-conf/minio/data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inspacy
+
+  comment.api:
+    init: true
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    stop_grace_period: 30s
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - Database__MariaDbSqlConnection=${COMMENT_ConnectionString:?Set COMMENT_ConnectionString in DevOps/.env}
+      - Broker__RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
+      - Broker__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - Broker__RabbitMq__Username=${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in DevOps/.env}
+      - Broker__RabbitMq__Password=${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in DevOps/.env}
+      - Broker__RabbitMq__VirtualHost=${RABBITMQ_DEFAULT_VHOST:-inspacy}
+      - Broker__RabbitMq__Tls__Enabled=false
+      - Storage__Minio__Enabled=${MINIO_ENABLED:-true}
+      - Storage__Minio__Endpoint=${MINIO_ENDPOINT:-minio:9000}
+      - Storage__Minio__AccessKey=${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in DevOps/.env}
+      - Storage__Minio__SecretKey=${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in DevOps/.env}
+      - Storage__Minio__Bucket=${MINIO_BUCKET:-inspacy-storage}
+      - Storage__Minio__UseSSL=${MINIO_USE_SSL:-false}
+      - Storage__Minio__PublicUrl=${MINIO_PUBLIC_URL:-http://localhost:9000}
+      - Identity__ServiceUrl=${IDENTITY_SERVICE_URL:?Set IDENTITY_SERVICE_URL in DevOps/.env}
+      - Identity__ClientSecret=${COMMENT_IDENTITY_SERVICE_CLIENT_SECRET:?Set COMMENT_IDENTITY_SERVICE_CLIENT_SECRET in DevOps/.env}
+      - Following__ServiceUrl=${FOLLOWING_SERVICE_URL:-http://following.api:8080/}
+      - Following__Snapshot__ClientSecret=${COMMENT_FOLLOWING_SNAPSHOT_CLIENT_SECRET:?Set COMMENT_FOLLOWING_SNAPSHOT_CLIENT_SECRET in DevOps/.env}
+      - CommentCursor__SigningKey=${COMMENT_CURSOR_SIGNING_KEY:?Set COMMENT_CURSOR_SIGNING_KEY in DevOps/.env}
+    ports:
+      - 5014:8080
+    networks:
+      - inspacy
+
+  feed.api:
+    init: true
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    stop_grace_period: 30s
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - Database__MariaDbSqlConnection=${FEED_ConnectionString:?Set FEED_ConnectionString in DevOps/.env}
+      - Broker__RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
+      - Broker__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - Broker__RabbitMq__Username=${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in DevOps/.env}
+      - Broker__RabbitMq__Password=${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in DevOps/.env}
+      - Broker__RabbitMq__VirtualHost=${RABBITMQ_DEFAULT_VHOST:-inspacy}
+      - Broker__RabbitMq__Tls__Enabled=false
+      - Cache__Redis__Enabled=${REDIS_ENABLED:-true}
+      - Cache__Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD:?Set REDIS_PASSWORD in DevOps/.env},abortConnect=false
+      - "Cache__Redis__InstanceName=inspacy-feed:"
+      - Cache__Redis__ConnectTimeoutMilliseconds=1000
+      - Cache__Redis__OperationTimeoutMilliseconds=250
+      - Following__ServiceUrl=${FOLLOWING_SERVICE_URL:-http://following.api:8080/}
+      - Following__Snapshot__ClientSecret=${FEED_FOLLOWING_SNAPSHOT_CLIENT_SECRET:?Set FEED_FOLLOWING_SNAPSHOT_CLIENT_SECRET in DevOps/.env}
+      - FeedCursor__SigningKeys__primary=${FEED_CURSOR_SIGNING_KEY:?Set FEED_CURSOR_SIGNING_KEY in DevOps/.env}
+      - Identity__ServiceUrl=${IDENTITY_SERVICE_URL:?Set IDENTITY_SERVICE_URL in DevOps/.env}
+      - Identity__ClientId=feed_api
+      - Identity__ClientSecret=${FEED_IDENTITY_SERVICE_CLIENT_SECRET:?Set FEED_IDENTITY_SERVICE_CLIENT_SECRET in DevOps/.env}
+    ports:
+      - 5006:8080
+    networks:
+      - inspacy
+
+  following.api:
+    init: true
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    stop_grace_period: 30s
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - Database__MariaDbSqlConnection=${FOLLOWING_ConnectionString:?Set FOLLOWING_ConnectionString in DevOps/.env}
+      - Broker__RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
+      - Broker__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - Broker__RabbitMq__Username=${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in DevOps/.env}
+      - Broker__RabbitMq__Password=${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in DevOps/.env}
+      - Broker__RabbitMq__VirtualHost=${RABBITMQ_DEFAULT_VHOST:-inspacy}
+      - Broker__RabbitMq__Tls__Enabled=false
+      - Categories__ServiceUrl=${CATEGORIES_SERVICE_URL:?Set CATEGORIES_SERVICE_URL in DevOps/.env}
+      - FollowingCursor__SigningKey=${FOLLOWING_CURSOR_SIGNING_KEY:?Set FOLLOWING_CURSOR_SIGNING_KEY in DevOps/.env}
+      - Identity__ServiceUrl=${IDENTITY_SERVICE_URL:?Set IDENTITY_SERVICE_URL in DevOps/.env}
+      - Identity__ClientSecret=${FOLLOWING_IDENTITY_SERVICE_CLIENT_SECRET:?Set FOLLOWING_IDENTITY_SERVICE_CLIENT_SECRET in DevOps/.env}
+    ports:
+      - 5016:8080
+    networks:
+      - inspacy
+
+  interaction.api:
+    init: true
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    stop_grace_period: 30s
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - Database__MariaDbSqlConnection=${INTERACTION_ConnectionString:?Set INTERACTION_ConnectionString in DevOps/.env}
+      - Broker__RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
+      - Broker__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - Broker__RabbitMq__Username=${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in DevOps/.env}
+      - Broker__RabbitMq__Password=${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in DevOps/.env}
+      - Broker__RabbitMq__VirtualHost=${RABBITMQ_DEFAULT_VHOST:-inspacy}
+      - Broker__RabbitMq__Tls__Enabled=false
+      - Cache__Redis__Enabled=${REDIS_ENABLED:-true}
+      - Cache__Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD:?Set REDIS_PASSWORD in DevOps/.env},abortConnect=false
+      - "Cache__Redis__InstanceName=inspacy-interaction:"
+      - Cache__Redis__ConnectTimeoutMilliseconds=1000
+      - Cache__Redis__OperationTimeoutMilliseconds=250
+      - Identity__ServiceUrl=${IDENTITY_SERVICE_URL:?Set IDENTITY_SERVICE_URL in DevOps/.env}
+      - Identity__ClientSecret=${INTERACTION_IDENTITY_SERVICE_CLIENT_SECRET:?Set INTERACTION_IDENTITY_SERVICE_CLIENT_SECRET in DevOps/.env}
+      - Privacy__ViewHashKey=${INTERACTION_VIEW_HASH_KEY:?Set INTERACTION_VIEW_HASH_KEY in DevOps/.env}
+      - AuthoritativeExport__CursorSigningKey=${INTERACTION_AUTHORITY_EXPORT_CURSOR_SIGNING_KEY:?Set INTERACTION_AUTHORITY_EXPORT_CURSOR_SIGNING_KEY in DevOps/.env}
+    ports:
+      - 5010:8080
+    networks:
+      - inspacy
+
+  moderation.api:
+    init: true
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    stop_grace_period: 30s
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - Database__MariaDbSqlConnection=${MODERATION_ConnectionString:?Set MODERATION_ConnectionString in DevOps/.env}
+      - Broker__RabbitMq__Host=${RABBITMQ_HOST:-rabbitmq}
+      - Broker__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - Broker__RabbitMq__Username=${RABBITMQ_DEFAULT_USER:?Set RABBITMQ_DEFAULT_USER in DevOps/.env}
+      - Broker__RabbitMq__Password=${RABBITMQ_DEFAULT_PASS:?Set RABBITMQ_DEFAULT_PASS in DevOps/.env}
+      - Broker__RabbitMq__VirtualHost=${RABBITMQ_DEFAULT_VHOST:-inspacy}
+      - Broker__RabbitMq__Tls__Enabled=false
+      - Identity__ServiceUrl=${IDENTITY_SERVICE_URL:?Set IDENTITY_SERVICE_URL in DevOps/.env}
+      - Identity__ClientSecret=${MODERATION_IDENTITY_SERVICE_CLIENT_SECRET:?Set MODERATION_IDENTITY_SERVICE_CLIENT_SECRET in DevOps/.env}
+      - DecisionExport__CursorSigningKey=${MODERATION_DECISION_EXPORT_CURSOR_SIGNING_KEY:?Set MODERATION_DECISION_EXPORT_CURSOR_SIGNING_KEY in DevOps/.env}
+      - Moderation__Privacy__SubjectLookupKey=${MODERATION_PRIVACY_SUBJECT_LOOKUP_KEY:?Set MODERATION_PRIVACY_SUBJECT_LOOKUP_KEY in DevOps/.env}
+    ports:
+      - 5020:8080
+    networks:
+      - inspacy
+
+networks:
+  inspacy:
+    external: true

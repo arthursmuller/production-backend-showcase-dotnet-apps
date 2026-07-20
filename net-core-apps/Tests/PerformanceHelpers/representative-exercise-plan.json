@@ -1,0 +1,291 @@
+{
+  "$schema": "representative-exercise-plan.schema.json",
+  "schemaVersion": "2.0",
+  "planId": "inspacy-representative-gates",
+  "description": "Repository-side coverage plan for representative rebuild, performance, data, recovery, resilience, capacity, and release exercises. It is not execution evidence.",
+  "allowedTargetEnvironments": ["representative", "staging", "preproduction", "drill"],
+  "forbiddenTargetEnvironments": ["prod", "production"],
+  "evidenceRetentionDays": 365,
+  "globalAbortConditions": [
+    "The target cannot be proven isolated from production traffic and production data.",
+    "The named abort authority or approved change record is unavailable.",
+    "A writer fence, privacy invariant, legal hold, or erasure invariant cannot be proven.",
+    "A credential, endpoint secret, access token, user content, or moderation evidence enters a general artifact.",
+    "An SLO burn, resource ceiling, integrity mismatch, or unbounded recovery estimate crosses its approved threshold."
+  ],
+  "exercises": [
+    {
+      "type": "projection-rebuild",
+      "gates": ["0.7"],
+      "objective": "Rebuild the current projection into isolated staging from a fixed authority boundary, catch up current deltas, and prove convergence under duplicate, stale, gap, and crash/replay cases.",
+      "runbook": "../README.md#projection-rebuild-and-message-replay",
+      "maximumDurationMinutes": 240,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": true,
+      "requiredApproverRoles": ["service-owner", "platform-sre", "security"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "seed", "capture-boundary", "import", "delta-catchup", "verify", "activate", "observe", "dispose-staging"],
+      "requiredFaults": ["duplicate", "stale", "gap", "crash-replay"],
+      "requiredMetrics": [
+        { "name": "rebuild.duration", "unit": "seconds", "operator": "<=", "target": 14400, "rationale": "The recorded projection rebuild RTO is four hours." },
+        { "name": "rebuild.integrity-mismatches", "unit": "count", "operator": "==", "target": 0, "rationale": "Counts, versions, hashes, and invariants must converge exactly unless an approved tolerance says otherwise." },
+        { "name": "rebuild.privacy-mismatches", "unit": "count", "operator": "==", "target": 0, "rationale": "A rebuild must never broaden visibility or lose erasure state." },
+        { "name": "rebuild.backlog-recovery", "unit": "seconds", "operator": "<=", "target": 1800, "rationale": "Live delta backlog must recover inside thirty minutes." }
+      ],
+      "requiredArtifacts": ["approval-record", "cardinality-manifest", "command-log", "configuration-manifest", "fault-timeline", "metric-export", "query-plan-report", "reconciliation-report"],
+      "abortConditions": ["The snapshot boundary moves or expires.", "A gap cannot be reconciled from the authority source.", "Any sampled authorization or erasure result differs."]
+    },
+    {
+      "type": "performance-baseline",
+      "gates": ["0.10"],
+      "objective": "Run load, stress, and soak profiles against the approved operation mix and cardinality while proving the injector and dependencies retain the required headroom.",
+      "runbook": "../README.md#performance-and-capacity-exercises",
+      "maximumDurationMinutes": 720,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": false,
+      "requiredApproverRoles": ["service-owner", "platform-sre", "product"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "seed", "warm", "load", "stress", "recover", "soak", "review"],
+      "requiredFaults": [],
+      "requiredMetrics": [
+        { "name": "performance.headroom", "unit": "percent", "operator": ">=", "target": 30, "rationale": "The workload envelope requires at least thirty percent peak headroom." },
+        { "name": "performance.slo-gate-failures", "unit": "count", "operator": "==", "target": 0, "rationale": "Every route and freshness gate must satisfy the recorded SLO." },
+        { "name": "performance.injector-saturation", "unit": "percent", "operator": "<=", "target": 70, "rationale": "The injector must not be the limiting resource." },
+        { "name": "performance.unexplained-errors", "unit": "count", "operator": "==", "target": 0, "rationale": "Every error must be expected load shedding or have a resolved cause." }
+      ],
+      "requiredArtifacts": ["approval-record", "cardinality-manifest", "configuration-manifest", "metric-export", "performance-result", "query-plan-report", "topology-manifest"],
+      "abortConditions": ["The injector saturates before the target load.", "An error, latency, freshness, or dependency ceiling crosses the declared abort gate."]
+    },
+    {
+      "type": "ddl-role-separation",
+      "gates": ["2.9"],
+      "objective": "Prove runtime identities cannot execute DDL while the isolated migration identity can apply the reviewed schema and cannot serve application traffic.",
+      "runbook": "../README.md#database-migrations",
+      "maximumDurationMinutes": 60,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": false,
+      "requiredApproverRoles": ["database-engineering", "security", "service-owner"],
+      "requiredAttestations": [
+        {
+          "type": "production-principal-grant",
+          "requiredServiceDomains": ["comment", "feed", "following", "interaction", "moderation"],
+          "requiredClaims": ["runtime-ddl-denied", "runtime-dml-smoke-passed", "migration-only-ddl-verified", "cross-role-isolation-verified"],
+          "requiredApprovalRoles": ["database-engineering", "security", "service-owner"]
+        }
+      ],
+      "requiredPhases": ["approve", "provision-identities", "probe-runtime", "probe-migration", "verify-grants", "cleanup"],
+      "requiredFaults": [],
+      "requiredMetrics": [
+        { "name": "roles.runtime-ddl-successes", "unit": "count", "operator": "==", "target": 0, "rationale": "API, consumer, and job credentials must have no DDL authority." },
+        { "name": "roles.migration-ddl-successes", "unit": "count", "operator": ">=", "target": 1, "rationale": "The scoped migration identity must be able to execute the reviewed migration." },
+        { "name": "roles.runtime-smoke-failures", "unit": "count", "operator": "==", "target": 0, "rationale": "Least privilege must still permit the current runtime contract." },
+        { "name": "roles.network-policy-bypasses", "unit": "count", "operator": "==", "target": 0, "rationale": "Only the migration execution boundary may reach DDL credentials." }
+      ],
+      "requiredArtifacts": ["approval-record", "command-log", "grant-report", "production-grant-policy-export", "production-principal-attestation", "schema-report", "topology-manifest"],
+      "abortConditions": ["A runtime identity executes any DDL.", "The probe target is not a disposable isolated schema."]
+    },
+    {
+      "type": "migration-recovery",
+      "gates": ["2.10"],
+      "objective": "Rehearse the current forward migration and reviewed recovery decision on production-shaped cardinality without introducing a runtime alternate schema path.",
+      "runbook": "../README.md#database-migrations",
+      "maximumDurationMinutes": 240,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": true,
+      "requiredApproverRoles": ["database-engineering", "service-owner", "release-manager"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "restore-seed", "capture-invariants", "apply", "current-contract-canary", "recovery-decision", "reapply-or-forward-repair", "verify", "cleanup"],
+      "requiredFaults": ["cancel-during-migration", "application-rollback"],
+      "requiredMetrics": [
+        { "name": "migration.pending-model-changes", "unit": "count", "operator": "==", "target": 0, "rationale": "The exact image and migration inventory must match." },
+        { "name": "migration.integrity-mismatches", "unit": "count", "operator": "==", "target": 0, "rationale": "Forward and recovery decisions must preserve declared invariants." },
+        { "name": "migration.latest-history-applied", "unit": "count", "operator": "==", "target": 1, "rationale": "An irreversible removal must refuse recovery before DDL and remain recorded as applied." },
+        { "name": "migration.duration", "unit": "seconds", "operator": "<=", "target": 1800, "rationale": "The exercise must remain within the service recovery objective unless a stricter approved gate applies." }
+      ],
+      "requiredArtifacts": ["approval-record", "cardinality-manifest", "command-log", "configuration-manifest", "integrity-report", "query-plan-report", "rollback-report", "schema-report"],
+      "abortConditions": ["A destructive recovery action is not separately approved.", "Metadata lock, copy time, storage, replica lag, or invariant drift crosses its gate."]
+    },
+    {
+      "type": "storage-scale-read-replica",
+      "gates": ["2.11"],
+      "objective": "Exercise the forecast-selected partition, archive, or compaction mechanism and prove replica consistency before any correctness-sensitive read routing.",
+      "runbook": "../README.md#performance-and-capacity-exercises",
+      "maximumDurationMinutes": 480,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": false,
+      "requiredApproverRoles": ["database-engineering", "service-owner", "platform-sre"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "seed", "apply-storage-policy", "write-load", "replica-read", "consistency-check", "query-plan-check", "cleanup"],
+      "requiredFaults": ["replica-lag", "replica-restart"],
+      "requiredMetrics": [
+        { "name": "storage.free-headroom", "unit": "percent", "operator": ">=", "target": 30, "rationale": "Forecasted storage must retain the approved growth headroom." },
+        { "name": "storage.consistency-mismatches", "unit": "count", "operator": "==", "target": 0, "rationale": "Correctness-sensitive reads cannot tolerate replica divergence." },
+        { "name": "storage.replica-lag", "unit": "seconds", "operator": "<=", "target": 5, "rationale": "The engineering consistency window is five seconds pending environment approval." },
+        { "name": "storage.query-plan-regressions", "unit": "count", "operator": "==", "target": 0, "rationale": "The selected storage policy must preserve bounded indexed plans." }
+      ],
+      "requiredArtifacts": ["approval-record", "cardinality-manifest", "configuration-manifest", "integrity-report", "metric-export", "query-plan-report", "topology-manifest"],
+      "abortConditions": ["Replica reads broaden visibility or return stale authorization state.", "Partition or archive work exceeds its storage, lock, or replication budget."]
+    },
+    {
+      "type": "dependency-resilience",
+      "gates": ["6.9"],
+      "objective": "Exercise duplicate delivery, broker and Redis outage, deadlock, and SIGTERM behavior under representative load with bounded recovery.",
+      "runbook": "../README.md#dependency-degradation",
+      "maximumDurationMinutes": 240,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": false,
+      "requiredApproverRoles": ["platform-sre", "service-owner", "messaging-owner", "cache-owner"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "warm", "inject-faults", "hold", "recover", "drain", "reconcile"],
+      "requiredFaults": ["duplicate-delivery", "broker-outage", "redis-outage", "deadlock", "sigterm"],
+      "requiredMetrics": [
+        { "name": "resilience.duplicate-business-effects", "unit": "count", "operator": "==", "target": 0, "rationale": "At-least-once delivery must still produce one business effect." },
+        { "name": "resilience.unreconciled-messages", "unit": "count", "operator": "==", "target": 0, "rationale": "Outbox, inbox, and error state must reconcile after recovery." },
+        { "name": "resilience.backlog-recovery", "unit": "seconds", "operator": "<=", "target": 1800, "rationale": "Broker and worker backlog must recover inside thirty minutes." },
+        { "name": "resilience.sigterm-lost-commits", "unit": "count", "operator": "==", "target": 0, "rationale": "Graceful drain must not lose committed work." }
+      ],
+      "requiredArtifacts": ["approval-record", "command-log", "configuration-manifest", "fault-timeline", "integrity-report", "metric-export", "reconciliation-report"],
+      "abortConditions": ["A fault causes unbounded retry or load amplification.", "A privacy or one-business-effect invariant fails."]
+    },
+    {
+      "type": "database-failover",
+      "gates": ["6.9"],
+      "objective": "Restart and fail over the representative MariaDB writer while proving one writable primary, bounded RPO/RTO, and complete reconciliation.",
+      "runbook": "../README.md#backup-restore-and-failover",
+      "maximumDurationMinutes": 120,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": true,
+      "requiredApproverRoles": ["database-engineering", "service-owner", "platform-sre"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "capture-boundary", "fence", "fail-writer", "promote", "canary", "reconcile", "failback"],
+      "requiredFaults": ["writer-restart", "writer-failover"],
+      "requiredMetrics": [
+        { "name": "database.concurrent-writers", "unit": "count", "operator": "<=", "target": 1, "rationale": "Failover must never create split brain." },
+        { "name": "database.rpo", "unit": "seconds", "operator": "<=", "target": 300, "rationale": "The service database RPO is five minutes." },
+        { "name": "database.rto", "unit": "seconds", "operator": "<=", "target": 1800, "rationale": "The service database RTO is thirty minutes." },
+        { "name": "database.integrity-mismatches", "unit": "count", "operator": "==", "target": 0, "rationale": "Domain, privacy, and messaging state must reconcile." }
+      ],
+      "requiredArtifacts": ["approval-record", "fault-timeline", "integrity-report", "metric-export", "reconciliation-report", "topology-manifest"],
+      "abortConditions": ["More than one writer accepts commits.", "The approved recovery point or integrity boundary cannot be proven."]
+    },
+    {
+      "type": "backup-restore-pitr",
+      "gates": ["6.9", "6.10"],
+      "objective": "Restore an encrypted backup and transaction-log chain to an isolated target, verify the selected point, and exercise current-contract canary recovery.",
+      "runbook": "../README.md#backup-restore-and-failover",
+      "maximumDurationMinutes": 180,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": true,
+      "requiredApproverRoles": ["database-engineering", "security", "service-owner"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "select-recovery-point", "verify-chain", "restore", "apply-logs", "verify-integrity", "current-contract-canary", "reconcile", "cleanup"],
+      "requiredFaults": ["restore", "point-in-time-recovery"],
+      "requiredMetrics": [
+        { "name": "restore.chain-integrity-failures", "unit": "count", "operator": "==", "target": 0, "rationale": "Every encrypted backup/log artifact must verify." },
+        { "name": "restore.rpo", "unit": "seconds", "operator": "<=", "target": 300, "rationale": "The selected point must meet the five-minute RPO." },
+        { "name": "restore.rto", "unit": "seconds", "operator": "<=", "target": 1800, "rationale": "Restore and current-contract validation must meet the thirty-minute RTO." },
+        { "name": "restore.integrity-mismatches", "unit": "count", "operator": "==", "target": 0, "rationale": "Schema, data, privacy, and messaging invariants must match the chosen point." }
+      ],
+      "requiredArtifacts": ["approval-record", "command-log", "integrity-report", "metric-export", "reconciliation-report", "restore-manifest", "schema-report"],
+      "abortConditions": ["The backup chain, key access, or approved recovery point is ambiguous.", "The restore target is connected to production traffic."]
+    },
+    {
+      "type": "az-region-failback",
+      "gates": ["6.10"],
+      "objective": "Exercise zone loss and the approved region-loss scope, then perform a separately reviewed failback without weakening encryption or writer fencing.",
+      "runbook": "../README.md#performance-and-capacity-exercises",
+      "maximumDurationMinutes": 1440,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": true,
+      "requiredApproverRoles": ["platform-sre", "security", "service-owner", "product"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "capture-boundary", "zone-loss", "region-recovery", "current-contract-canary", "reconcile", "failback", "observe"],
+      "requiredFaults": ["zone-loss", "region-loss", "failback"],
+      "requiredMetrics": [
+        { "name": "availability.zone-slo-failures", "unit": "count", "operator": "==", "target": 0, "rationale": "A single-zone loss must remain within the approved availability SLO." },
+        { "name": "availability.region-rto", "unit": "seconds", "operator": "<=", "target": 86400, "rationale": "The engineering region recovery target is twenty-four hours pending topology approval." },
+        { "name": "availability.rpo", "unit": "seconds", "operator": "<=", "target": 300, "rationale": "Recovered service data must meet its approved RPO." },
+        { "name": "availability.integrity-mismatches", "unit": "count", "operator": "==", "target": 0, "rationale": "Failback must preserve encryption, data, messaging, and privacy invariants." }
+      ],
+      "requiredArtifacts": ["approval-record", "fault-timeline", "integrity-report", "metric-export", "reconciliation-report", "restore-manifest", "topology-manifest"],
+      "abortConditions": ["The secondary region cannot prove encryption, residency, or least privilege.", "Writer fencing or the failback recovery point becomes ambiguous."]
+    },
+    {
+      "type": "cache-zero-backlog",
+      "gates": ["6.11"],
+      "objective": "Run Feed and Interaction with empty/unavailable Redis while measuring source protection, shedding, backlog disk limits, and recovery drain.",
+      "runbook": "../README.md#redis-and-cache-recovery",
+      "maximumDurationMinutes": 240,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": false,
+      "requiredApproverRoles": ["cache-owner", "database-engineering", "service-owner", "platform-sre"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "warm", "flush-or-isolate-cache", "hold-peak", "recover-cache", "drain", "reconcile"],
+      "requiredFaults": ["cache-empty", "cache-unavailable", "backlog-peak", "source-capacity-exhaustion"],
+      "requiredMetrics": [
+        { "name": "cachezero.database-cpu", "unit": "percent", "operator": "<=", "target": 65, "rationale": "Cache loss must not saturate the authoritative database." },
+        { "name": "cachezero.pool-wait", "unit": "milliseconds", "operator": "<=", "target": 50, "rationale": "The source pool wait safety threshold is fifty milliseconds." },
+        { "name": "cachezero.backlog-disk", "unit": "percent", "operator": "<=", "target": 70, "rationale": "Durable backlog storage must remain below the safety ceiling." },
+        { "name": "cachezero.recovery-drain", "unit": "seconds", "operator": "<=", "target": 1800, "rationale": "The recovery backlog must drain inside thirty minutes." },
+        { "name": "cachezero.shed-responses-observed", "unit": "count", "operator": ">=", "target": 1, "rationale": "The source-capacity fault must prove that bounded overload shedding is active instead of allowing uncontrolled amplification." },
+        { "name": "cachezero.admissions-over-bounded-capacity", "unit": "count", "operator": "==", "target": 0, "rationale": "No request may be admitted above the declared safe source-capacity boundary during cache loss and backlog pressure." }
+      ],
+      "requiredArtifacts": ["approval-record", "configuration-manifest", "fault-timeline", "metric-export", "performance-result", "query-plan-report", "reconciliation-report"],
+      "abortConditions": ["Database CPU, pool wait, disk, or calculated drain time crosses its gate.", "Cache loss changes authorization or correctness."]
+    },
+    {
+      "type": "connection-cost-headroom",
+      "gates": ["6.11"],
+      "objective": "Validate maximum-replica connection algebra, storage growth, dependency headroom, and forecast cost against observed representative peaks.",
+      "runbook": "../README.md#performance-and-capacity-exercises",
+      "maximumDurationMinutes": 180,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": false,
+      "requiredApproverRoles": ["platform-sre", "database-engineering", "service-owner", "finance-cost"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "capture-topology", "scale-to-ceiling", "measure-connections", "measure-growth", "measure-cost", "review"],
+      "requiredFaults": ["maximum-replica-scale"],
+      "requiredMetrics": [
+        { "name": "capacity.connection-budget-used", "unit": "percent", "operator": "<=", "target": 75, "rationale": "Fleet maximum plus reserve must remain below the dependency connection ceiling." },
+        { "name": "capacity.peak-headroom", "unit": "percent", "operator": ">=", "target": 30, "rationale": "Peak load must retain thirty percent headroom." },
+        { "name": "capacity.storage-forecast-variance", "unit": "percent", "operator": "<=", "target": 10, "rationale": "Observed storage growth must remain close enough to update or approve the forecast." },
+        { "name": "capacity.cost-forecast-variance", "unit": "currency-percent", "operator": "<=", "target": 10, "rationale": "Observed representative cost must be reconciled to the approved forecast." }
+      ],
+      "requiredArtifacts": ["approval-record", "cardinality-manifest", "configuration-manifest", "cost-export", "metric-export", "topology-manifest"],
+      "abortConditions": ["A shared dependency crosses its connection or quota reserve.", "Autoscaling exceeds the declared maximum or loses its rollback path."]
+    },
+    {
+      "type": "canary-rollback",
+      "gates": ["6.12"],
+      "objective": "Promote the current artifact through declared canary stages and prove automatic stop plus artifact/configuration rollback without an alternate runtime implementation.",
+      "runbook": "../README.md#production-deployment",
+      "maximumDurationMinutes": 180,
+      "requiresIsolatedTarget": true,
+      "requiresSanitizedData": true,
+      "requiresWriterFence": false,
+      "requiredApproverRoles": ["release-manager", "platform-sre", "service-owner"],
+      "requiredAttestations": [],
+      "requiredPhases": ["approve", "one-percent", "ten-percent", "twenty-five-percent", "full", "trigger-rollback", "verify-rollback", "observe"],
+      "requiredFaults": ["slo-rollback-trigger", "schema-gate-trigger", "projection-gate-trigger"],
+      "requiredMetrics": [
+        { "name": "canary.completed-stages", "unit": "count", "operator": ">=", "target": 4, "rationale": "The declared one, ten, twenty-five, and full stages must be exercised." },
+        { "name": "canary.missed-abort-signals", "unit": "count", "operator": "==", "target": 0, "rationale": "Every injected gate breach must halt promotion." },
+        { "name": "canary.rollback-duration", "unit": "seconds", "operator": "<=", "target": 900, "rationale": "The prior signed artifact/configuration must be restored within fifteen minutes." },
+        { "name": "canary.post-rollback-mismatches", "unit": "count", "operator": "==", "target": 0, "rationale": "Schema, projection, security, and business invariants must reconcile after rollback." }
+      ],
+      "requiredArtifacts": ["approval-record", "configuration-manifest", "fault-timeline", "metric-export", "performance-result", "reconciliation-report", "rollback-report"],
+      "abortConditions": ["A promotion stage advances while any required gate is unknown or failing.", "The prior signed artifact/configuration cannot be restored exactly."]
+    }
+  ]
+}

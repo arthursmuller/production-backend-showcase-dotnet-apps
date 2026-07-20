@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "status": "repository-policy-not-deployment-evidence",
+  "owner": "Platform/SRE",
+  "candidateIdentity": {
+    "requireImageDigest": true,
+    "requirePreviousKnownGoodDigest": true,
+    "allowMutableTags": false,
+    "requireSignedProvenance": true,
+    "requireSignedSpdxSbom": true,
+    "requireSourceWorkflow": ".github/workflows/backend-ci.yml"
+  },
+  "stages": [
+    {
+      "trafficPercent": 1,
+      "minimumObservationSeconds": 900
+    },
+    {
+      "trafficPercent": 10,
+      "minimumObservationSeconds": 900
+    },
+    {
+      "trafficPercent": 25,
+      "minimumObservationSeconds": 900
+    },
+    {
+      "trafficPercent": 100,
+      "minimumObservationSeconds": 3600
+    }
+  ],
+  "requiredGates": [
+    {
+      "id": "artifact-integrity",
+      "phase": "before-first-stage",
+      "source": "backend-promotion-gate workflow evidence",
+      "failureAction": "block-promotion"
+    },
+    {
+      "id": "edge-security",
+      "phase": "before-first-stage-and-continuous",
+      "source": "approved managed gateway/WAF export and provider health",
+      "failureAction": "rollback"
+    },
+    {
+      "id": "schema-compatibility",
+      "phase": "before-first-stage",
+      "source": "signed migration rehearsal and target migration status",
+      "failureAction": "block-promotion-and-roll-forward-schema-repair"
+    },
+    {
+      "id": "slo-error-budget",
+      "phase": "continuous",
+      "source": "InspacyApiFastErrorBudgetBurn and InspacyApiSlowErrorBudgetBurn",
+      "failureAction": "rollback"
+    },
+    {
+      "id": "latency",
+      "phase": "continuous",
+      "source": "InspacyApiP95LatencyAboveTarget",
+      "failureAction": "rollback"
+    },
+    {
+      "id": "dependency-health",
+      "phase": "continuous",
+      "source": "MariaDB, MassTransit, cache, and readiness alerts",
+      "failureAction": "rollback"
+    },
+    {
+      "id": "projection-convergence",
+      "phase": "continuous",
+      "source": "Feed, Comment, and Interaction convergence/gap alerts",
+      "failureAction": "rollback"
+    },
+    {
+      "id": "privacy-authorization",
+      "phase": "continuous",
+      "source": "audience authorization, revocation, erasure, and moderation security alerts",
+      "failureAction": "rollback-and-page-security"
+    }
+  ],
+  "rollback": {
+    "automatic": true,
+    "target": "previous-known-good-image-digest-and-configuration-revision",
+    "maximumDecisionSeconds": 60,
+    "completionTargetSeconds": 300,
+    "actions": [
+      "halt-traffic-expansion",
+      "route-new-traffic-to-previous-known-good-digest",
+      "preserve-candidate-telemetry-and-release-evidence",
+      "page-service-owner-and-platform-sre"
+    ],
+    "forbiddenActions": [
+      "deploy-a-mutable-tag",
+      "run-an-unreviewed-database-down-migration",
+      "disable-security-or-privacy-controls",
+      "delete-release-evidence"
+    ]
+  },
+  "externalEvidenceRequired": [
+    "provider-specific rollout-controller binding",
+    "signal-to-controller wiring",
+    "managed gateway/WAF export digest",
+    "automatic rollback rehearsal",
+    "named approvals and environment deployment record"
+  ]
+}
